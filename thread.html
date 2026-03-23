@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0E0E0F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Whisper — Priča</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/thread.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== THREAD HEADER ===== -->
+  <header class="thread-header">
+    <button class="btn-back" id="btn-back">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+      Nazad
+    </button>
+
+    <div class="thread-header-info">
+      <div class="thread-header-title" id="thread-title">Priča</div>
+      <div class="thread-header-sub" id="thread-subtitle">0 komentara</div>
+    </div>
+
+    <span class="cat-pill" id="thread-category"></span>
+  </header>
+
+  <!-- ===== THREAD CONTENT ===== -->
+  <div class="thread-content">
+
+    <!-- Original Post -->
+    <div class="original-post" id="original-post">
+      <!-- Rendered by JS -->
+    </div>
+
+    <!-- Comments -->
+    <div class="comments-section">
+      <div class="comments-header">
+        <h3 class="comments-title">Komentari</h3>
+        <span class="comments-count-badge" id="comments-count-badge">0</span>
+      </div>
+      <div class="comments-list" id="comments-list">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== COMMENT INPUT ===== -->
+  <div class="comment-input-bar">
+    <div class="comment-input-hint">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      Komentarišeš anonimno
+    </div>
+    <div class="comment-input-row">
+      <textarea
+        class="comment-textarea"
+        id="comment-textarea"
+        placeholder="Napiši podršku ili savet..."
+        rows="1"
+      ></textarea>
+      <button class="comment-send-btn" id="comment-send-btn" disabled>
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== KICK DIALOG ===== -->
+  <div class="kick-backdrop" id="kick-backdrop" onclick="cancelKick()"></div>
+
+  <div class="kick-dialog" id="kick-dialog">
+    <div class="kick-dialog-handle"></div>
+    <div class="kick-dialog-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+    </div>
+    <div class="kick-dialog-title">Ukloni komentar?</div>
+    <div class="kick-dialog-text">
+      Ovaj komentar će biti trajno uklonjen iz tvoje priče.<br>
+      Korisnik neće biti obavešten.
+    </div>
+    <div class="kick-dialog-actions">
+      <button class="btn-kick-confirm" onclick="executeKick()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+        Da, ukloni komentar
+      </button>
+      <button class="btn-kick-cancel" onclick="cancelKick()">Odustani</button>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<script src="js/data.js"></script>
+<script src="js/thread.js"></script>
+</body>
+</html>
