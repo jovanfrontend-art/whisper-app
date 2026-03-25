@@ -5,6 +5,7 @@
 let currentPost = null;
 let currentUser = null;
 let isOwner = false;
+let commentImageData = null;
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,6 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   currentPost = getPostById(id);
   if (!currentPost) { window.location.href = 'index.html'; return; }
+
+  // Sync admin post title/text from daily highlight (admin-editable)
+  if (currentPost.isAdmin) {
+    const d = getDailyHighlight(currentPost.adminCategory);
+    currentPost.title = d.title;
+    currentPost.text  = d.subtitle;
+  }
 
   // Get current logged-in user
   try { currentUser = JSON.parse(localStorage.getItem('whisper_user')); } catch(e) {}
@@ -30,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(); }
   });
   document.getElementById('comment-textarea')?.addEventListener('input', autoResizeTextarea);
+  document.getElementById('comment-img-btn')?.addEventListener('click', () => {
+    document.getElementById('comment-img-input')?.click();
+  });
+  document.getElementById('comment-img-input')?.addEventListener('change', onCommentImageSelected);
 });
 
 // ---- Header ----
@@ -38,11 +50,16 @@ function renderThreadHeader() {
   const subEl   = document.getElementById('thread-subtitle');
   const catEl   = document.getElementById('thread-category');
 
-  if (titleEl) titleEl.textContent = 'Priča';
+  if (titleEl) titleEl.textContent = currentPost.isAdmin ? 'Tema dana' : 'Priča';
   if (subEl)   subEl.textContent   = `${currentPost.commentCount} komentara`;
   if (catEl) {
-    catEl.textContent = currentPost.category;
-    catEl.className   = `cat-pill cat-${currentPost.category.toLowerCase()}`;
+    if (currentPost.isAdmin) {
+      catEl.textContent = '✨ Whisper';
+      catEl.className   = 'cat-pill cat-temadana';
+    } else {
+      catEl.textContent = currentPost.category;
+      catEl.className   = `cat-pill cat-${currentPost.category.toLowerCase()}`;
+    }
   }
 }
 
@@ -58,20 +75,45 @@ function renderOriginalPost() {
     </div>
   ` : '';
 
-  container.innerHTML = `
-    ${ownerBanner}
+  const author = getPostAuthor(currentPost);
+  const authorAvatarStyle = author.avatarImage
+    ? `background:${author.color};background-image:url(${author.avatarImage});background-size:cover;background-position:center`
+    : `background:${author.color}`;
+  const authorAvatarContent = author.avatarImage ? '' : author.initials;
+
+  const authorBlock = currentPost.isAdmin ? `
     <div class="original-post-header">
       <div class="original-post-meta">
-        <div class="avatar lg" style="background: ${currentPost.avatar.color}">${currentPost.avatar.initials}</div>
+        <div class="avatar lg whisper-avatar">W</div>
         <div class="original-post-info">
-          <span class="original-post-anon">${getAnonName(currentPost.avatar)}</span>
+          <span class="original-post-anon whisper-name">Whisper</span>
+          <span class="original-post-time">Admin · Tema dana</span>
+        </div>
+      </div>
+      <span class="cat-pill cat-temadana">✨ Tema dana</span>
+    </div>
+  ` : `
+    <div class="original-post-header">
+      <div class="original-post-meta">
+        <div class="avatar lg" style="${authorAvatarStyle}">${authorAvatarContent}</div>
+        <div class="original-post-info">
+          <span class="original-post-anon">${escapeHtml(author.name)}</span>
           <span class="original-post-time">${currentPost.time}</span>
         </div>
       </div>
       <span class="cat-pill cat-${currentPost.category.toLowerCase()}">${currentPost.category}</span>
     </div>
+  `;
+
+  container.innerHTML = `
+    ${ownerBanner}
+    ${authorBlock}
+
+    ${currentPost.title ? `<h2 class="original-post-title">${escapeHtml(currentPost.title)}</h2>` : ''}
 
     <p class="original-post-text">${escapeHtml(currentPost.text)}</p>
+
+    ${currentPost.image ? `<img class="original-post-image" src="${currentPost.image}" alt="" loading="lazy" onerror="this.remove()">` : ''}
 
     <div class="thread-reactions">
       <div class="reactions-bar" id="thread-reactions-bar">
@@ -82,16 +124,14 @@ function renderOriginalPost() {
 }
 
 function renderReactionBtns(post) {
-  return Object.entries(post.reactions).map(([emoji, count]) => {
-    const reacted = post.userReactions.includes(emoji);
-    return `
-      <button class="reaction-btn ${reacted ? 'reacted' : ''}"
-              onclick="toggleThreadReaction('${emoji}')">
-        <span class="reaction-emoji">${emoji}</span>
-        <span class="reaction-count">${formatCount(count)}</span>
-      </button>
-    `;
-  }).join('');
+  const pills = Object.entries(post.reactions)
+    .filter(([, count]) => count > 0)
+    .map(([emoji, count]) => {
+      const reacted = post.userReactions.includes(emoji);
+      return `<button class="reaction-pill${reacted ? ' reacted' : ''}" onclick="toggleThreadReaction('${emoji}')">${emoji} <span>${formatCount(count)}</span></button>`;
+    }).join('');
+
+  return `${pills}<button class="add-reaction-btn" onclick="openEmojiPicker(event, 'post', ${post.id}, null)" title="Dodaj reakciju"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg></button>`;
 }
 
 function toggleThreadReaction(emoji) {
@@ -150,24 +190,53 @@ function renderComments() {
           </div>
           <div class="comment-actions">
             ${kickBtn}
-            <button class="comment-like-btn ${c.liked ? 'liked' : ''}" onclick="toggleCommentLike(${c.id})">
-              <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              ${c.likes}
-            </button>
           </div>
         </div>
         <p class="comment-text">${escapeHtml(c.text)}</p>
+        ${c.image ? `<img class="comment-image" src="${c.image}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+        ${renderCommentReactionPills(c)}
       </div>
     `;
   }).join('');
 }
 
-function toggleCommentLike(commentId) {
+function renderCommentReactionPills(c) {
+  const reactions = c.reactions !== undefined ? c.reactions
+    : (c.likes > 0 ? { '❤️': c.likes } : {});
+  const userReactions = c.userReactions !== undefined ? c.userReactions
+    : (c.liked ? ['❤️'] : []);
+
+  const pills = Object.entries(reactions)
+    .filter(([, count]) => count > 0)
+    .map(([emoji, count]) => {
+      const reacted = userReactions.includes(emoji);
+      return `<button class="reaction-pill sm${reacted ? ' reacted' : ''}" onclick="toggleCommentReaction(${currentPost.id}, ${c.id}, '${emoji}')">${emoji} <span>${formatCount(count)}</span></button>`;
+    }).join('');
+
+  const addBtn = `<button class="add-reaction-btn sm" onclick="openEmojiPicker(event, 'comment', ${currentPost.id}, ${c.id})" title="Reaguj"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg></button>`;
+
+  return `<div class="reactions-bar sm">${pills}${addBtn}</div>`;
+}
+
+function toggleCommentReaction(postId, commentId, emoji) {
   if (!currentPost) return;
   const comment = currentPost.comments.find(c => c.id === commentId);
   if (!comment) return;
-  comment.liked  = !comment.liked;
-  comment.likes += comment.liked ? 1 : -1;
+
+  // Migrate legacy likes/liked format on first interaction
+  if (comment.reactions === undefined) {
+    comment.reactions = comment.likes > 0 ? { '❤️': comment.likes } : {};
+    comment.userReactions = comment.liked ? ['❤️'] : [];
+  }
+
+  const idx = comment.userReactions.indexOf(emoji);
+  if (idx === -1) {
+    comment.userReactions.push(emoji);
+    comment.reactions[emoji] = (comment.reactions[emoji] || 0) + 1;
+  } else {
+    comment.userReactions.splice(idx, 1);
+    comment.reactions[emoji] = Math.max(0, (comment.reactions[emoji] || 1) - 1);
+  }
   saveData();
   renderComments();
 }
@@ -246,9 +315,10 @@ function submitComment() {
       color: avatarColors[Math.floor(Math.random() * avatarColors.length)],
     },
     text,
+    image: commentImageData || null,
     time: 'upravo',
-    likes: 0,
-    liked: false,
+    reactions: {},
+    userReactions: [],
     isNew: true,
   };
 
@@ -256,6 +326,9 @@ function submitComment() {
   currentPost.commentCount += 1;
   textarea.value = '';
   textarea.style.height = 'auto';
+  commentImageData = null;
+  const preview = document.getElementById('comment-img-preview');
+  if (preview) preview.innerHTML = '';
 
   saveData();
   renderComments();
@@ -266,6 +339,32 @@ function submitComment() {
   setTimeout(() => {
     document.getElementById('comments-list')?.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, 100);
+}
+
+function onCommentImageSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    commentImageData = ev.target.result;
+    const preview = document.getElementById('comment-img-preview');
+    if (preview) {
+      preview.innerHTML = `
+        <div class="comment-img-thumb">
+          <img src="${commentImageData}" alt="">
+          <button class="comment-img-remove" onclick="removeCommentImage()">✕</button>
+        </div>
+      `;
+    }
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function removeCommentImage() {
+  commentImageData = null;
+  const preview = document.getElementById('comment-img-preview');
+  if (preview) preview.innerHTML = '';
 }
 
 // ---- Helpers ----

@@ -57,15 +57,16 @@ Building a community anonymous confession app where users post stories (love, bl
 - Sticky header: logo, login/signup (pre-login) ili avatar + notifikacije (post-login)
 - Horizontal topic chips — filter feed po kategoriji
 - Daily highlight baner (editable iz admin dashboarda)
-- Post kartice: avatar, kategorija, tekst, emoji reakcije, komentari
-- FAB → compose modal (samo za ulogovane)
+- Post kartice: avatar, kategorija, tekst, slika (opcionalna), emoji reakcije, komentari
+- FAB → compose modal sa image upload (samo za ulogovane)
 - Bottom navigation
 
 ### `thread.html` — Thread View
 - Pun tekst posta + reakcije
+- Slike na postovima i komentarima (picsum.photos placeholder + base64 upload)
 - Lista komentara sa like dugmetom
 - **Kick funkcija**: vlasnik posta može da ukloni neprikladne komentare
-- Sticky comment input na dnu
+- Sticky comment input sa dugmetom za upload slike
 
 ### `admin.html` — Admin Dashboard
 - Sidebar navigacija
@@ -80,7 +81,7 @@ Building a community anonymous confession app where users post stories (love, bl
 | Akcija | Ponašanje |
 |--------|-----------|
 | Topic chip klik | Filtrira feed |
-| Emoji reakcija | Toggle + brojač |
+| Emoji reakcija | Slack-style pills (❤️ 12  😂 5) + picker dugme → otvara dropdown sa 5 emoji opcija |
 | Post klik | `thread.html?id=X` |
 | FAB | Compose modal |
 | Kick dugme (owner only) | Bottom sheet potvrda → ukloni komentar |

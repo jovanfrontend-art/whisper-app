@@ -194,6 +194,19 @@
 
             <div class="editor-form">
               <div class="form-group">
+                <label class="form-label">Kategorija</label>
+                <div class="tema-cat-selector" id="tema-cat-selector">
+                  <button class="tema-cat-btn active" data-cat="sve"     onclick="selectTemaCategory('sve')">✨ Sve</button>
+                  <button class="tema-cat-btn"        data-cat="ljubav"  onclick="selectTemaCategory('ljubav')">❤️ Ljubav</button>
+                  <button class="tema-cat-btn"        data-cat="blamovi" onclick="selectTemaCategory('blamovi')">😳 Blamovi</button>
+                  <button class="tema-cat-btn"        data-cat="misli"   onclick="selectTemaCategory('misli')">💭 Misli</button>
+                  <button class="tema-cat-btn"        data-cat="random"  onclick="selectTemaCategory('random')">🎲 Random</button>
+                  <button class="tema-cat-btn"        data-cat="posao"   onclick="selectTemaCategory('posao')">💼 Posao</button>
+                  <button class="tema-cat-btn"        data-cat="veze"    onclick="selectTemaCategory('veze')">💔 Veze</button>
+                </div>
+              </div>
+
+              <div class="form-group">
                 <label class="form-label">Naslov</label>
                 <input class="form-input" type="text" id="tema-title"
                        placeholder="npr. Ispovesti koje se ne zaboravljaju"
@@ -211,7 +224,7 @@
               <div>
                 <div class="form-label" style="margin-bottom:8px;">Pregled</div>
                 <div class="preview-box">
-                  <div class="preview-tag">✨ Danas</div>
+                  <div class="preview-tag">✨ Tema dana</div>
                   <div class="preview-title" id="preview-title">Ispovesti koje se ne zaboravljaju</div>
                   <div class="preview-subtitle" id="preview-subtitle">Podeli svoju priču. Neko čeka da čuje.</div>
                 </div>
@@ -388,28 +401,40 @@
           </div>
           <div class="editor-form">
             <div class="form-group">
+              <label class="form-label">Kategorija</label>
+              <div class="tema-cat-selector">
+                <button class="tema-cat-btn active" data-cat="sve"     onclick="selectTemaCategory('sve')">✨ Sve</button>
+                <button class="tema-cat-btn"        data-cat="ljubav"  onclick="selectTemaCategory('ljubav')">❤️ Ljubav</button>
+                <button class="tema-cat-btn"        data-cat="blamovi" onclick="selectTemaCategory('blamovi')">😳 Blamovi</button>
+                <button class="tema-cat-btn"        data-cat="misli"   onclick="selectTemaCategory('misli')">💭 Misli</button>
+                <button class="tema-cat-btn"        data-cat="random"  onclick="selectTemaCategory('random')">🎲 Random</button>
+                <button class="tema-cat-btn"        data-cat="posao"   onclick="selectTemaCategory('posao')">💼 Posao</button>
+                <button class="tema-cat-btn"        data-cat="veze"    onclick="selectTemaCategory('veze')">💔 Veze</button>
+              </div>
+            </div>
+            <div class="form-group">
               <label class="form-label">Naslov</label>
-              <input class="form-input" type="text" id="tema-title-2"
+              <input class="form-input" type="text" id="tema-title"
                      placeholder="npr. Ispovesti koje se ne zaboravljaju"
-                     oninput="updatePreview2()">
+                     oninput="updatePreview()">
             </div>
             <div class="form-group">
               <label class="form-label">Podnaslov</label>
-              <textarea class="form-input form-textarea" id="tema-subtitle-2"
+              <textarea class="form-input form-textarea" id="tema-subtitle"
                         placeholder="npr. Podeli svoju priču. Neko čeka da čuje."
-                        oninput="updatePreview2()"></textarea>
+                        oninput="updatePreview()"></textarea>
             </div>
             <div>
               <div class="form-label" style="margin-bottom:8px;">Pregled</div>
               <div class="preview-box">
-                <div class="preview-tag">✨ Danas</div>
-                <div class="preview-title" id="preview-title-2">Ispovesti koje se ne zaboravljaju</div>
-                <div class="preview-subtitle" id="preview-subtitle-2">Podeli svoju priču. Neko čeka da čuje.</div>
+                <div class="preview-tag">✨ Tema dana</div>
+                <div class="preview-title" id="preview-title">Ispovesti koje se ne zaboravljaju</div>
+                <div class="preview-subtitle" id="preview-subtitle">Podeli svoju priču. Neko čeka da čuje.</div>
               </div>
             </div>
             <div class="editor-actions">
-              <button class="btn-primary" onclick="saveTema2()">Objavi temu dana</button>
-              <button class="btn-secondary" onclick="resetTema2()">Resetuj</button>
+              <button class="btn-primary" onclick="saveTema()">Objavi temu dana</button>
+              <button class="btn-secondary" onclick="resetTema()">Resetuj</button>
             </div>
           </div>
         </div>
@@ -467,8 +492,8 @@ function showSection(name) {
     }
   });
 
-  // Sync tema editors if switching to tema
-  if (name === 'tema') loadTemaFields('2');
+  // Reload tema fields when switching to tema section
+  if (name === 'tema') loadTemaFields();
 }
 
 // ---- Logout ----
@@ -478,64 +503,65 @@ function adminLogout() {
 }
 
 // ---- Tema dana ----
-const DEFAULT_TITLE    = 'Ispovesti koje se ne zaboravljaju';
-const DEFAULT_SUBTITLE = 'Podeli svoju priču. Neko čeka da čuje.';
+const TEMA_DEFAULTS = {
+  sve:     { title: 'Ispovesti koje se ne zaboravljaju',        subtitle: 'Podeli svoju priču. Neko čeka da čuje. Ovo je mesto gde možeš biti potpuno iskren/a — bez osude, bez imenovanja, samo istina.' },
+  ljubav:  { title: 'Kad srce govori glasnije od razuma',       subtitle: 'Ljubav koja boli, ljubav koja leči — svaka priča je vredna pažnje. Podeli šta nosiš u sebi.' },
+  blamovi: { title: 'Stidi se glasno — ovde si siguran/na',     subtitle: 'Najgori blamovi postaju najbolje priče. Šta ti se desilo što još uvek ne možeš da zaboraviš?' },
+  misli:   { title: 'Misli koje ne smeš da kažeš naglas',       subtitle: 'One čudne, tamne, tople misli koje imaš u 2 ujutru. Ovde ih možeš zapisati.' },
+  random:  { title: 'Sve što ti pada na pamet',                 subtitle: 'Nema pravila, nema kategorija. Ako ne znaš gde da staviš priču — stavi je ovde.' },
+  posao:   { title: 'Tajne koje ostaju između tebe i monitora', subtitle: 'Šef koji ne sluša, kolega koji krade ideje, otkaz koji te uhvati nespremnog. Priče sa radnog mesta.' },
+  veze:    { title: 'Priče o srcima koja su bila slomljena',    subtitle: 'Raskidi, udaljavanja, neobjašnjive tišine. Gde si sada i šta nosiš sa sobom?' },
+};
 
-function loadTemaFields(suffix) {
-  const s = suffix || '';
+let activeTemaCategory = 'sve';
+
+function selectTemaCategory(cat) {
+  activeTemaCategory = cat;
+  document.querySelectorAll('.tema-cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+  loadTemaFields();
+}
+
+function loadTemaFields() {
+  const def = TEMA_DEFAULTS[activeTemaCategory] || TEMA_DEFAULTS.sve;
   try {
-    const saved = JSON.parse(localStorage.getItem('whisper_daily') || '{}');
-    const titleEl = document.getElementById(`tema-title${s ? '-' + s : ''}`);
-    const subEl   = document.getElementById(`tema-subtitle${s ? '-' + s : ''}`);
-    if (titleEl) titleEl.value = saved.title    || DEFAULT_TITLE;
-    if (subEl)   subEl.value   = saved.subtitle || DEFAULT_SUBTITLE;
+    const saved = JSON.parse(localStorage.getItem(`whisper_daily_${activeTemaCategory}`) || '{}');
+    const titleEl = document.getElementById('tema-title');
+    const subEl   = document.getElementById('tema-subtitle');
+    if (titleEl) titleEl.value = saved.title    || def.title;
+    if (subEl)   subEl.value   = saved.subtitle || def.subtitle;
   } catch(e) {}
-  updatePreview(suffix);
+  updatePreview();
 }
 
-function updatePreview(suffix) {
-  const s      = suffix ? '-' + suffix : '';
-  const suf    = suffix || '';
-  const title  = document.getElementById(`tema-title${s}`)?.value    || DEFAULT_TITLE;
-  const sub    = document.getElementById(`tema-subtitle${s}`)?.value || DEFAULT_SUBTITLE;
-  const pTitle = document.getElementById(`preview-title${s}`);
-  const pSub   = document.getElementById(`preview-subtitle${s}`);
-  if (pTitle) pTitle.textContent = title || DEFAULT_TITLE;
-  if (pSub)   pSub.textContent   = sub   || DEFAULT_SUBTITLE;
+function updatePreview() {
+  const def    = TEMA_DEFAULTS[activeTemaCategory] || TEMA_DEFAULTS.sve;
+  const title  = document.getElementById('tema-title')?.value    || def.title;
+  const sub    = document.getElementById('tema-subtitle')?.value || def.subtitle;
+  const pTitle = document.getElementById('preview-title');
+  const pSub   = document.getElementById('preview-subtitle');
+  if (pTitle) pTitle.textContent = title;
+  if (pSub)   pSub.textContent   = sub;
 }
 
-function updatePreview2() { updatePreview('2'); }
-
-function saveTema(suffix) {
-  const s     = suffix ? '-' + suffix : '';
-  const title = document.getElementById(`tema-title${s}`)?.value?.trim()    || DEFAULT_TITLE;
-  const sub   = document.getElementById(`tema-subtitle${s}`)?.value?.trim() || DEFAULT_SUBTITLE;
-  localStorage.setItem('whisper_daily', JSON.stringify({ title, subtitle: sub }));
-
-  // Sync both editors
-  ['', '-2'].forEach(sfx => {
-    const t = document.getElementById(`tema-title${sfx}`);
-    const u = document.getElementById(`tema-subtitle${sfx}`);
-    if (t) t.value = title;
-    if (u) u.value = sub;
-    updatePreview(sfx.replace('-','') || undefined);
-  });
-
-  showToast('✅ Tema dana je objavljena! Prikazuje se korisnicima.');
+function saveTema() {
+  const def   = TEMA_DEFAULTS[activeTemaCategory] || TEMA_DEFAULTS.sve;
+  const title = document.getElementById('tema-title')?.value?.trim()    || def.title;
+  const sub   = document.getElementById('tema-subtitle')?.value?.trim() || def.subtitle;
+  localStorage.setItem(`whisper_daily_${activeTemaCategory}`, JSON.stringify({ title, subtitle: sub }));
+  updatePreview();
+  const catLabel = document.querySelector(`.tema-cat-btn[data-cat="${activeTemaCategory}"]`)?.textContent?.trim() || activeTemaCategory;
+  showToast(`✅ Tema dana za "${catLabel}" je objavljena!`);
 }
 
-function saveTema2() { saveTema('2'); }
-
-function resetTema(suffix) {
-  const s = suffix ? '-' + suffix : '';
-  const t = document.getElementById(`tema-title${s}`);
-  const u = document.getElementById(`tema-subtitle${s}`);
-  if (t) t.value = DEFAULT_TITLE;
-  if (u) u.value = DEFAULT_SUBTITLE;
-  updatePreview(suffix);
+function resetTema() {
+  const def = TEMA_DEFAULTS[activeTemaCategory] || TEMA_DEFAULTS.sve;
+  localStorage.removeItem(`whisper_daily_${activeTemaCategory}`);
+  const t = document.getElementById('tema-title');
+  const u = document.getElementById('tema-subtitle');
+  if (t) t.value = def.title;
+  if (u) u.value = def.subtitle;
+  updatePreview();
 }
-
-function resetTema2() { resetTema('2'); }
 
 // ---- Activity data ----
 const ACTIVITIES = [
@@ -682,8 +708,7 @@ function showToast(msg) {
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
-  loadTemaFields('');
-  loadTemaFields('2');
+  loadTemaFields();
   renderActivity();
   renderPostsTable();
   renderUsersTable();

@@ -181,3 +181,129 @@ a { text-decoration: none; color: inherit; }
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ---- Reactions Bar ---- */
+.reactions-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+
+/* ---- Reaction Pills (Slack-style) ---- */
+.reaction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-family: var(--font);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--ease);
+  line-height: 1.3;
+}
+
+.reaction-pill span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.reaction-pill:hover {
+  border-color: rgba(255,149,0,0.35);
+  background: var(--surface-3);
+}
+
+.reaction-pill.reacted {
+  background: var(--primary-bg);
+  border-color: rgba(255,149,0,0.45);
+}
+
+.reaction-pill.reacted span {
+  color: var(--primary);
+}
+
+.reaction-pill.sm {
+  padding: 3px 8px;
+  font-size: 13px;
+}
+
+.reactions-bar.sm {
+  margin-top: var(--space-sm);
+  margin-bottom: 0;
+}
+
+/* ---- Add Reaction Button ---- */
+.add-reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--ease);
+  font-family: var(--font);
+  flex-shrink: 0;
+}
+
+.add-reaction-btn svg {
+  width: 15px;
+  height: 15px;
+  fill: var(--text-3);
+  transition: fill var(--ease);
+}
+
+.add-reaction-btn:hover {
+  border-color: rgba(255,149,0,0.4);
+}
+
+.add-reaction-btn:hover svg { fill: var(--primary); }
+
+.add-reaction-btn.sm {
+  width: 28px;
+  height: 26px;
+}
+
+.add-reaction-btn.sm svg { width: 14px; height: 14px; }
+
+/* ---- Emoji Picker Popup ---- */
+.emoji-picker-popup {
+  position: fixed;
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--surface-3);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+  z-index: 9999;
+}
+
+.emoji-option {
+  width: 40px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: transform 0.15s ease, background 0.15s ease;
+  font-family: var(--font);
+}
+
+.emoji-option:hover {
+  background: var(--surface-2);
+  transform: scale(1.25);
+}

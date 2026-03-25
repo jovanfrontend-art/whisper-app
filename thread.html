@@ -56,7 +56,12 @@
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
       Komentarišeš anonimno
     </div>
+    <div id="comment-img-preview"></div>
     <div class="comment-input-row">
+      <button class="btn-img-upload-sm" id="comment-img-btn" title="Dodaj sliku">
+        <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      </button>
+      <input type="file" id="comment-img-input" accept="image/*" style="display:none">
       <textarea
         class="comment-textarea"
         id="comment-textarea"

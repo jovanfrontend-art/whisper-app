@@ -548,6 +548,37 @@ input, textarea { font-family: var(--font); outline: none; border: none; }
   text-align: right;
 }
 
+/* Tema dana category selector */
+.tema-cat-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tema-cat-btn {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  transition: all 0.15s ease;
+}
+
+.tema-cat-btn:hover {
+  border-color: rgba(255,149,0,0.4);
+  color: var(--text);
+}
+
+.tema-cat-btn.active {
+  background: rgba(255,149,0,0.15);
+  border-color: rgba(255,149,0,0.45);
+  color: var(--primary);
+}
+
 /* Preview */
 .preview-box {
   background: linear-gradient(135deg, #1a1208, #2a1d00);

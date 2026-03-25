@@ -64,13 +64,19 @@
 
 /* ---- Daily Highlight ---- */
 .daily-highlight {
+  --daily-rgb: 255, 149, 0; /* default: orange (sve) */
   margin: 0 var(--space-lg) var(--space-lg);
-  background: linear-gradient(135deg, #1a1208 0%, #2a1d00 50%, #1a1208 100%);
-  border: 1px solid rgba(255, 149, 0, 0.2);
+  background-color: #141415;
+  background-image: linear-gradient(135deg,
+    rgba(var(--daily-rgb), 0.12) 0%,
+    rgba(var(--daily-rgb), 0.18) 50%,
+    rgba(var(--daily-rgb), 0.08) 100%);
+  border: 1px solid rgba(var(--daily-rgb), 0.22);
   border-radius: var(--radius-xl);
   padding: var(--space-xl);
   position: relative;
   overflow: hidden;
+  transition: border-color 0.3s ease;
 }
 
 .daily-highlight::before {
@@ -80,7 +86,7 @@
   right: -40px;
   width: 160px;
   height: 160px;
-  background: radial-gradient(circle, rgba(255,149,0,0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--daily-rgb), 0.18) 0%, transparent 70%);
   border-radius: 50%;
 }
 
@@ -91,7 +97,7 @@
   left: 20px;
   width: 100px;
   height: 100px;
-  background: radial-gradient(circle, rgba(255,149,0,0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--daily-rgb), 0.1) 0%, transparent 70%);
   border-radius: 50%;
 }
 
@@ -99,13 +105,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(255, 149, 0, 0.15);
-  border: 1px solid rgba(255, 149, 0, 0.25);
+  background: rgba(var(--daily-rgb), 0.15);
+  border: 1px solid rgba(var(--daily-rgb), 0.28);
   border-radius: var(--radius-full);
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--primary);
+  color: rgb(var(--daily-rgb));
   letter-spacing: 0.05em;
   text-transform: uppercase;
   margin-bottom: var(--space-md);
@@ -120,31 +126,19 @@
   letter-spacing: -0.03em;
 }
 
-.daily-subtitle {
-  font-size: 13px;
-  color: var(--text-3);
+.daily-text {
+  font-size: 14px;
+  color: var(--text-2);
   margin-bottom: var(--space-lg);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-.daily-stats {
-  display: flex;
-  gap: var(--space-xl);
-}
+.daily-highlight .reactions-bar { margin-bottom: var(--space-md); }
 
-.daily-stat { display: flex; flex-direction: column; gap: 2px; }
-
-.daily-stat-value {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--primary);
-  letter-spacing: -0.04em;
-}
-
-.daily-stat-label {
-  font-size: 11px;
-  color: var(--text-3);
-  font-weight: 500;
+.daily-highlight .post-card-footer {
+  border-top: 1px solid rgba(var(--daily-rgb), 0.14);
+  padding-top: var(--space-md);
+  margin-top: var(--space-xs);
 }
 
 /* ---- Feed Section Header ---- */
@@ -234,11 +228,96 @@
   word-break: break-word;
 }
 
+/* Post image */
+.post-image-wrap {
+  margin: 0 calc(-1 * var(--space-lg)) var(--space-md);
+  overflow: hidden;
+}
+
+.post-image {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  display: block;
+  background: var(--surface-2);
+}
+
+/* Image upload area in compose */
+.compose-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.image-upload-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.btn-img-upload {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  transition: all var(--ease);
+  font-family: var(--font);
+}
+
+.btn-img-upload svg { width: 15px; height: 15px; fill: var(--text-2); }
+
+.btn-img-upload:hover {
+  border-color: rgba(255,149,0,0.4);
+  color: var(--primary);
+}
+.btn-img-upload:hover svg { fill: var(--primary); }
+
+.compose-img-preview {
+  position: relative;
+  display: inline-block;
+}
+
+.compose-img-preview img {
+  height: 52px;
+  width: 52px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  display: block;
+}
+
+.compose-img-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background: #FF453A;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: white;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  border: 2px solid var(--surface-2);
+}
+
 /* Reactions */
 .reactions-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: wrap;
   margin-bottom: var(--space-md);
 }

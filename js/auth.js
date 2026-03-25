@@ -36,8 +36,19 @@ const Auth = (() => {
       const avatarEl = document.getElementById('header-avatar');
       if (nameEl) nameEl.textContent = user.username || 'Ti';
       if (avatarEl) {
-        avatarEl.textContent = (user.username || 'A')[0].toUpperCase();
-        avatarEl.style.background = user.color || '#FF3B5C';
+        if (user.avatarImage) {
+          avatarEl.textContent = '';
+          avatarEl.style.background = user.color || '#FF3B5C';
+          avatarEl.style.backgroundImage = `url(${user.avatarImage})`;
+          avatarEl.style.backgroundSize = 'cover';
+          avatarEl.style.backgroundPosition = 'center';
+        } else {
+          avatarEl.textContent = (user.username || 'A')[0].toUpperCase();
+          avatarEl.style.backgroundImage = '';
+          avatarEl.style.backgroundSize = '';
+          avatarEl.style.backgroundPosition = '';
+          avatarEl.style.background = user.color || '#FF3B5C';
+        }
       }
     } else {
       authArea.classList.remove('hidden');
@@ -208,7 +219,7 @@ const Auth = (() => {
     });
   }
 
-  return { init, isLoggedIn, getUser, openAuthModal, updateHeaderState };
+  return { init, isLoggedIn, getUser, openAuthModal, updateHeaderState, logout };
 })();
 
 // Toast notification
