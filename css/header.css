@@ -3,8 +3,11 @@
    ===================== */
 
 .app-header {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: var(--max-w);
   z-index: 50;
   width: 100%;
   height: var(--header-h);

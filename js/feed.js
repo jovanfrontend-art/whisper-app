@@ -214,11 +214,9 @@ function openCompose() {
 
   const modal = document.getElementById('compose-modal');
   const backdrop = document.getElementById('compose-backdrop');
-  const fab = document.getElementById('fab');
 
   modal?.classList.add('active');
   backdrop?.classList.add('active');
-  fab?.classList.add('open');
   document.body.style.overflow = 'hidden';
 
   document.getElementById('compose-textarea')?.focus();
@@ -227,11 +225,9 @@ function openCompose() {
 function closeCompose() {
   const modal = document.getElementById('compose-modal');
   const backdrop = document.getElementById('compose-backdrop');
-  const fab = document.getElementById('fab');
 
   modal?.classList.remove('active');
   backdrop?.classList.remove('active');
-  fab?.classList.remove('open');
   document.body.style.overflow = '';
   composeImageData = null;
   const preview = document.getElementById('compose-img-preview');
@@ -365,8 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
   renderFeed();
   renderNotifications();
 
-  // FAB
-  document.getElementById('fab')?.addEventListener('click', openCompose);
+  // Back to top
+  window.addEventListener('scroll', () => {
+    document.getElementById('back-to-top')?.classList.toggle('visible', window.scrollY > 300);
+  }, { passive: true });
 
   // Compose backdrop
   document.getElementById('compose-backdrop')?.addEventListener('click', closeCompose);

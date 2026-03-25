@@ -3,7 +3,8 @@
    ===================== */
 
 .feed-container {
-  padding-bottom: calc(var(--bottom-nav-h) + var(--space-xl) + 70px);
+  padding-top: var(--header-h);
+  padding-bottom: calc(var(--bottom-nav-h) + var(--space-xl));
 }
 
 /* ---- Topics Bar ---- */
@@ -404,38 +405,52 @@
 }
 
 /* ---- FAB ---- */
-.fab {
+/* ---- Back to Top ---- */
+.back-to-top {
   position: fixed;
-  bottom: calc(var(--bottom-nav-h) + var(--space-xl));
-  right: var(--space-xl);
-  width: 56px;
-  height: 56px;
+  bottom: calc(var(--bottom-nav-h) + var(--space-md));
+  right: var(--space-lg);
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
   background: var(--primary);
-  box-shadow: var(--shadow-primary), 0 6px 24px rgba(255, 149, 0, 0.4);
+  box-shadow: 0 4px 16px rgba(255, 149, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 40;
-  transition: all var(--ease-spring);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  transform: translateY(10px);
 }
 
-.fab:hover, .fab:active {
-  transform: scale(1.08);
-  background: var(--primary-light);
+.back-to-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
-.fab svg {
-  width: 24px;
-  height: 24px;
+.back-to-top:hover { background: var(--primary-light); }
+
+.back-to-top svg {
+  width: 20px;
+  height: 20px;
   fill: #0E0E0F;
-  transition: transform var(--ease);
 }
-
-.fab.open svg { transform: rotate(45deg); }
 
 @media (min-width: 430px) {
-  .fab { right: calc(50% - var(--max-w) / 2 + var(--space-xl)); }
+  .back-to-top { right: calc(50% - var(--max-w) / 2 + var(--space-lg)); }
+}
+
+/* ---- Nav Compose Button ---- */
+.nav-item.nav-item--compose svg {
+  fill: var(--primary);
+}
+
+.nav-item--compose span {
+  color: var(--primary);
+  font-weight: 700;
 }
 
 /* ---- Bottom Nav ---- */
