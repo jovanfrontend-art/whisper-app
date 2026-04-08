@@ -392,34 +392,76 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // Realtime: post reactions
     const sessionId = getSessionId()
     const userId = user?.id ?? null
+
+    async function refetchReactions(postId: string) {
+      const [reactionsRes] = await Promise.all([
+        supabase.from('post_reactions').select('post_id, emoji, user_id, session_id').eq('post_id', postId),
+      ])
+      const reactions = (reactionsRes.data ?? []) as SupabaseReaction[]
+      const reactionCounts: Record<string, number> = {}
+      const userReactions: string[] = []
+      for (const r of reactions) {
+        reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1
+        if ((userId && r.user_id === userId) || (!userId && r.session_id === sessionId)) {
+          if (!userReactions.includes(r.emoji)) userReactions.push(r.emoji)
+        }
+      }
+      setPosts(prev => prev.map(p => p.id !== postId ? p : { ...p, reactions: reactionCounts, userReactions }))
+    }
+
     const reactionsChannel = supabase
       .channel('post-reactions-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'post_reactions' }, payload => {
-        const r = payload.new as { post_id: string; emoji: string; user_id: string | null; session_id: string | null }
-        setPosts(prev => prev.map(p => {
-          if (p.id !== r.post_id) return p
-          // Skip if it's our own reaction (already optimistically updated)
-          if ((userId && r.user_id === userId) || (!userId && r.session_id === sessionId)) return p
-          return {
-            ...p,
-            reactions: { ...p.reactions, [r.emoji]: (p.reactions[r.emoji] || 0) + 1 },
-          }
-        }))
+        const r = payload.new as { post_id: string; user_id: string | null; session_id: string | null }
+        if ((userId && r.user_id === userId) || (!userId && r.session_id === sessionId)) return
+        refetchReactions(r.post_id)
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'post_reactions' }, payload => {
-        const r = payload.old as { post_id: string; emoji: string; user_id: string | null; session_id: string | null }
-        setPosts(prev => prev.map(p => {
-          if (p.id !== r.post_id) return p
-          if ((userId && r.user_id === userId) || (!userId && r.session_id === sessionId)) return p
-          return {
-            ...p,
-            reactions: { ...p.reactions, [r.emoji]: Math.max(0, (p.reactions[r.emoji] || 0) - 1) },
-          }
+        const r = (payload.old ?? payload.new) as { post_id: string; user_id: string | null; session_id: string | null }
+        if (!r?.post_id) return
+        if ((userId && r.user_id === userId) || (!userId && r.session_id === sessionId)) return
+        refetchReactions(r.post_id)
+      })
+      .subscribe(status => console.log('[RT] reactions channel:', status))
+
+    // Realtime: new comments
+    const commentsChannel = supabase
+      .channel('comments-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, async payload => {
+        const c = payload.new as { id: string; post_id: string; user_id: string | null; text: string; image_url: string | null; created_at: string }
+        if (userId && c.user_id === userId) return
+        let profile: { username: string | null; color: string | null; is_admin: boolean } | null = null
+        if (c.user_id) {
+          const { data } = await supabase.from('profiles').select('username, color, is_admin').eq('id', c.user_id).single()
+          profile = data
+        }
+        const isAdmin = profile?.is_admin ?? false
+        const username = isAdmin ? 'Whisper' : (profile?.username ?? 'Korisnik')
+        const newComment: Comment = {
+          id: c.id,
+          avatar: { initials: username[0].toUpperCase(), color: isAdmin ? '#FF9500' : (profile?.color ?? AVATAR_COLORS[0]) },
+          username, isAdmin,
+          text: c.text, image: c.image_url,
+          time: formatTime(c.created_at),
+          reactions: {}, userReactions: [], isNew: true,
+        }
+        setPosts(prev => prev.map(p => p.id !== c.post_id ? p : { ...p, comments: [...p.comments, newComment], commentCount: p.commentCount + 1 }))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'comments' }, payload => {
+        const c = payload.old as { id: string; post_id: string }
+        if (!c?.post_id) return
+        setPosts(prev => prev.map(p => p.id !== c.post_id ? p : {
+          ...p,
+          comments: p.comments.filter(cm => cm.id !== c.id),
+          commentCount: Math.max(0, p.commentCount - 1),
         }))
       })
-      .subscribe()
+      .subscribe(status => console.log('[RT] comments channel:', status))
 
-    return () => { supabase.removeChannel(reactionsChannel) }
+    return () => {
+      supabase.removeChannel(reactionsChannel)
+      supabase.removeChannel(commentsChannel)
+    }
   }, [user, reloadKey])
 
   const getPostById = useCallback((id: string) => posts.find(p => p.id === id), [posts])

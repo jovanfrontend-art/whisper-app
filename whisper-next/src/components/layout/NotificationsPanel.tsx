@@ -45,7 +45,7 @@ export default function NotificationsPanel({ open, onClose }: Props) {
           ) : notifications.map(n => (
             <div key={n.id} className={`notif-panel-item${!n.read ? ' unread' : ''}`}>
               <div className="notif-panel-item-body" onClick={() => handleNavigate(n)}>
-                {!n.read ? <div className="notif-dot" /> : <div style={{ width: 8, flexShrink: 0 }} />}
+                <div className={`notif-dot${n.read ? ' notif-dot-read' : ''}`} />
                 <div className="notif-content">
                   <div className="notif-text">
                     <strong>{n.commenterUsername}</strong>

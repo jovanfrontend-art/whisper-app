@@ -1,13 +1,13 @@
 'use client'
-import { use, useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useStore, formatCount } from '@/lib/store'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import Avatar from '@/components/ui/Avatar'
 import ReactionBar from '@/components/ui/ReactionBar'
 import AuthModal from '@/components/auth/AuthModal'
 
-export default function ThreadPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function ThreadPage() {
+  const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { posts, getPostById, getPostAuthor, user, toggleReaction, toggleCommentReaction, addComment, removeComment, showToast } = useStore()
 
