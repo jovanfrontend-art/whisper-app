@@ -107,6 +107,22 @@ export default function AdminPage() {
   return (
     <div className="admin-layout">
 
+      {/* Mobile Header */}
+      <div className="admin-mobile-header">
+        <div className="admin-mobile-header-logo">
+          <div className="admin-mobile-header-logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.37 5.07L2 22l5.09-1.35A9.96 9.96 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+          </div>
+          <div>
+            <div className="admin-mobile-header-title">Whisper</div>
+            <div className="admin-mobile-header-sub">Admin Panel</div>
+          </div>
+        </div>
+        <button className="admin-mobile-logout" onClick={handleLogout}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+
       {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar-logo">
@@ -322,6 +338,26 @@ export default function AdminPage() {
 
         </div>
       </div>
+
+      {/* Mobile Bottom Nav */}
+      <nav className="admin-mobile-nav">
+        <button className={`admin-mobile-nav-btn${section === 'dashboard' ? ' active' : ''}`} onClick={() => setSection('dashboard')}>
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          Dashboard
+        </button>
+        <button className={`admin-mobile-nav-btn${section === 'posts' ? ' active' : ''}`} onClick={() => setSection('posts')}>
+          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+          Priče
+        </button>
+        <button className={`admin-mobile-nav-btn${section === 'tema' ? ' active' : ''}`} onClick={() => setSection('tema')}>
+          <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          Tema dana
+        </button>
+        <button className="admin-mobile-nav-btn" onClick={() => router.push('/')}>
+          <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+          Sajt
+        </button>
+      </nav>
 
       {toast && <div className="admin-toast show">{toast}</div>}
     </div>

@@ -1139,3 +1139,55 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .admin-content-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
 @media (max-width: 1100px) { .admin-content-grid { grid-template-columns: 1fr; } }
 .admin-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2A2A2D; border: 1px solid rgba(255,255,255,0.07); color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 14px; font-weight: 500; z-index: 9999; white-space: nowrap; }
+
+/* Admin Mobile */
+.admin-mobile-header { display: none; }
+.admin-mobile-nav { display: none; }
+
+@media (max-width: 768px) {
+  .admin-layout { flex-direction: column; }
+  .admin-sidebar { display: none; }
+  .admin-main { flex: 1; overflow-y: auto; }
+
+  .admin-mobile-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: #1A1A1C;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+  }
+  .admin-mobile-header-logo { display: flex; align-items: center; gap: 8px; }
+  .admin-mobile-header-logo-icon { width: 30px; height: 30px; background: #FF9500; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .admin-mobile-header-logo-icon svg { width: 16px; height: 16px; fill: #0E0E0F; }
+  .admin-mobile-header-title { font-size: 15px; font-weight: 800; color: #fff; }
+  .admin-mobile-header-sub { font-size: 10px; color: #6E6E7A; font-weight: 600; text-transform: uppercase; }
+  .admin-mobile-logout { padding: 8px; border-radius: 10px; background: rgba(255,255,255,0.05); border: none; color: #ADADB8; cursor: pointer; display: flex; align-items: center; }
+
+  .admin-header { display: none; }
+
+  .admin-content { padding: 16px 12px 90px; }
+
+  .admin-stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .admin-stat-card { padding: 14px; }
+  .admin-stat-value { font-size: 28px; }
+
+  .admin-panel { padding: 14px; }
+
+  .admin-table thead th:nth-child(3),
+  .admin-table thead th:nth-child(4),
+  .admin-table tbody td:nth-child(3),
+  .admin-table tbody td:nth-child(4) { display: none; }
+  .admin-td-text { max-width: 160px; }
+
+  .admin-mobile-nav {
+    display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+    background: #1A1A1C; border-top: 1px solid rgba(255,255,255,0.07);
+    z-index: 100; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  }
+  .admin-mobile-nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; cursor: pointer; padding: 4px 0;
+    color: #6E6E7A; font-size: 10px; font-weight: 600; transition: color 0.2s;
+  }
+  .admin-mobile-nav-btn svg { width: 22px; height: 22px; fill: currentColor; }
+  .admin-mobile-nav-btn.active { color: #FF9500; }
+}
