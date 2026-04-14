@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "WhisperX",
+    "slug": "whisper-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "whisper",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0E0E0F"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.whisperapp.social",
+      "backgroundColor": "#0E0E0F"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0E0E0F"
+      },
+      "package": "com.whisperapp.social",
+      "newArchEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-splash-screen",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#FF9500"
+        }
+      ],
+      "expo-asset",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "39c37225-4355-4491-be9d-5bb381fc2d4b"
+      }
+    },
+    "owner": "jovanweb"
+  }
+}
