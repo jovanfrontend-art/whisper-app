@@ -578,14 +578,13 @@ export default function AdminPage() {
   )
 }
 
-type SortCol = 'text' | 'category' | 'comment_count' | 'created_at'
 
 function AdminPostsTable({ posts, onDelete, page, totalCount, onPageChange }: {
   posts: Post[]
   onDelete: (id: string) => void
-  page: number
-  totalCount: number
-  onPageChange: (p: number) => void
+  page?: number
+  totalCount?: number
+  onPageChange?: (p: number) => void
 }) {
   function timeAgo(ts: string) {
     const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 60000)
@@ -594,7 +593,9 @@ function AdminPostsTable({ posts, onDelete, page, totalCount, onPageChange }: {
     return `pre ${Math.floor(diff / 1440)}d`
   }
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+  const resolvedPage = page ?? 1
+  const resolvedTotal = totalCount ?? 0
+  const totalPages = Math.max(1, Math.ceil(resolvedTotal / PAGE_SIZE))
 
   return (
     <div>
@@ -630,12 +631,12 @@ function AdminPostsTable({ posts, onDelete, page, totalCount, onPageChange }: {
         </table>
       </div>
 
-      {totalPages > 1 && (
+      {totalPages > 1 && onPageChange && (
         <div className="admin-pagination">
-          <button className="admin-page-btn" onClick={() => onPageChange(1)} disabled={page === 1}>«</button>
-          <button className="admin-page-btn" onClick={() => onPageChange(page - 1)} disabled={page === 1}>‹</button>
+          <button className="admin-page-btn" onClick={() => onPageChange(1)} disabled={resolvedPage === 1}>«</button>
+          <button className="admin-page-btn" onClick={() => onPageChange(resolvedPage - 1)} disabled={resolvedPage === 1}>‹</button>
           {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+            .filter(p => p === 1 || p === totalPages || Math.abs(p - resolvedPage) <= 2)
             .reduce<(number | '...')[]>((acc, p, i, arr) => {
               if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...')
               acc.push(p)
@@ -644,11 +645,11 @@ function AdminPostsTable({ posts, onDelete, page, totalCount, onPageChange }: {
             .map((p, i) =>
               p === '...'
                 ? <span key={`ellipsis-${i}`} className="admin-page-ellipsis">…</span>
-                : <button key={p} className={`admin-page-btn${page === p ? ' active' : ''}`} onClick={() => onPageChange(p as number)}>{p}</button>
+                : <button key={p} className={`admin-page-btn${resolvedPage === p ? ' active' : ''}`} onClick={() => onPageChange(p as number)}>{p}</button>
             )}
-          <button className="admin-page-btn" onClick={() => onPageChange(page + 1)} disabled={page === totalPages}>›</button>
-          <button className="admin-page-btn" onClick={() => onPageChange(totalPages)} disabled={page === totalPages}>»</button>
-          <span className="admin-page-info">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} od {totalCount}</span>
+          <button className="admin-page-btn" onClick={() => onPageChange(resolvedPage + 1)} disabled={resolvedPage === totalPages}>›</button>
+          <button className="admin-page-btn" onClick={() => onPageChange(totalPages)} disabled={resolvedPage === totalPages}>»</button>
+          <span className="admin-page-info">{(resolvedPage - 1) * PAGE_SIZE + 1}–{Math.min(resolvedPage * PAGE_SIZE, resolvedTotal)} od {resolvedTotal}</span>
         </div>
       )}
     </div>
