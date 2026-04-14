@@ -1165,12 +1165,12 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .admin-stat-card.purple::before { background: #BF5AF2; }
 .admin-stat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .admin-stat-label { font-size: 11px; font-weight: 700; color: #6E6E7A; text-transform: uppercase; letter-spacing: 0.07em; }
-.admin-user-cell { display: flex; align-items: center; gap: 10px; }
-.admin-status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
-.admin-status-pill.online { background: rgba(52,199,89,0.12); color: #34C759; }
-.admin-status-pill.offline { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); }
-.admin-status-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); }
-.admin-status-dot.online { background: #34C759; box-shadow: 0 0 5px rgba(52,199,89,0.6); }
+.admin-user-cell { display: inline-flex; align-items: center; gap: 10px; flex-direction: row; white-space: nowrap; }
+.admin-status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; letter-spacing: 0.01em; }
+.admin-status-pill.online { background: rgba(52,199,89,0.12); color: #34C759; border: 1px solid rgba(52,199,89,0.2); }
+.admin-status-pill.offline { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.07); }
+.admin-status-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.15); flex-shrink: 0; }
+.admin-status-dot.online { background: #34C759; box-shadow: 0 0 6px rgba(52,199,89,0.7); }
 .admin-role-pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
 .admin-role-pill.admin { background: rgba(255,149,0,0.15); color: #FF9500; }
 .admin-role-pill.user { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
