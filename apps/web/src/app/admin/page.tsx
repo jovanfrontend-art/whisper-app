@@ -1,6 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic'
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { createWhisperClient } from '@whisper/supabase'
 import { useRouter } from 'next/navigation'
 
@@ -739,7 +740,7 @@ export default function AdminPage() {
 
       {toast && <div className="admin-toast show">{toast}</div>}
 
-      {confirmModal && (
+      {confirmModal && typeof document !== 'undefined' && createPortal(
         <div className="admin-confirm-overlay" onClick={() => setConfirmModal(null)}>
           <div className="admin-confirm-modal" onClick={e => e.stopPropagation()}>
             <div className="admin-confirm-icon">
@@ -751,7 +752,8 @@ export default function AdminPage() {
               <button className="admin-confirm-btn-delete" onClick={() => { confirmModal.onConfirm(); setConfirmModal(null) }}>Obriši</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
