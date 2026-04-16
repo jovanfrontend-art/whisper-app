@@ -37,6 +37,7 @@ export default function AdminPage() {
   const [filterCat, setFilterCat] = useState<string>('all')
   const [newPost, setNewPost] = useState<{ category: string; title: string; subtitle: string }>({ category: 'ljubav', title: '', subtitle: '' })
   const [creating, setCreating] = useState(false)
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null)
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   const [users, setUsers] = useState<UserRow[]>([])
   const [active24h, setActive24h] = useState(0)
@@ -202,20 +203,28 @@ export default function AdminPage() {
     showToast('Tema dana sačuvana! ✅')
   }
 
-  async function handleDeleteHighlight(postId: string) {
-    if (!confirm('Obrisati ovu temu?')) return
-    await supabase.from('posts').delete().eq('id', postId)
-    setAllHighlights(h => h.filter(x => x.postId !== postId))
-    if (highlight?.postId === postId) setHighlight(null)
-    showToast('Tema obrisana.')
+  function handleDeleteHighlight(postId: string) {
+    setConfirmModal({
+      message: 'Obrisati ovu temu?',
+      onConfirm: async () => {
+        await supabase.from('posts').delete().eq('id', postId)
+        setAllHighlights(h => h.filter(x => x.postId !== postId))
+        if (highlight?.postId === postId) setHighlight(null)
+        showToast('Tema obrisana.')
+      }
+    })
   }
 
-  async function handleDeletePost(id: string) {
-    if (!confirm('Obrisati ovu priču?')) return
-    await supabase.from('posts').delete().eq('id', id)
-    fetchPosts(postsPage)
-    setPostsTotal(t => t - 1)
-    showToast('Priča obrisana.')
+  function handleDeletePost(id: string) {
+    setConfirmModal({
+      message: 'Obrisati ovu priču?',
+      onConfirm: async () => {
+        await supabase.from('posts').delete().eq('id', id)
+        fetchPosts(postsPage)
+        setPostsTotal(t => t - 1)
+        showToast('Priča obrisana.')
+      }
+    })
   }
 
   async function handleCreateHighlight() {
@@ -729,6 +738,21 @@ export default function AdminPage() {
       </nav>
 
       {toast && <div className="admin-toast show">{toast}</div>}
+
+      {confirmModal && (
+        <div className="admin-confirm-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="admin-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-confirm-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </div>
+            <div className="admin-confirm-message">{confirmModal.message}</div>
+            <div className="admin-confirm-actions">
+              <button className="admin-confirm-btn-cancel" onClick={() => setConfirmModal(null)}>Otkaži</button>
+              <button className="admin-confirm-btn-delete" onClick={() => { confirmModal.onConfirm(); setConfirmModal(null) }}>Obriši</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
