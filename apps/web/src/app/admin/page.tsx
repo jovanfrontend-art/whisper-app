@@ -538,9 +538,7 @@ export default function AdminPage() {
                         placeholder="Naslov teme dana..."
                         value={newPost.title}
                         onChange={e => setNewPost(p => ({ ...p, title: e.target.value }))}
-                        maxLength={80}
                       />
-                      <span className="admin-char-hint">{newPost.title.length}/80</span>
                     </div>
                     <div className="admin-form-group">
                       <label className="admin-form-label">Tekst / poziv na akciju</label>
@@ -586,9 +584,7 @@ export default function AdminPage() {
                           placeholder="Naslov teme dana..."
                           value={highlight.title}
                           onChange={e => setHighlight(h => h ? { ...h, title: e.target.value } : h)}
-                          maxLength={80}
                         />
-                        <span className="admin-char-hint">{highlight.title.length}/80</span>
                       </div>
                       <div className="admin-form-group">
                         <label className="admin-form-label">Tekst / poziv na akciju</label>
