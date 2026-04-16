@@ -34,6 +34,8 @@ export default function AdminPage() {
   const [allHighlights, setAllHighlights] = useState<Highlight[]>([])
   const [highlight, setHighlight] = useState<Highlight | null>(null)
   const [filterCat, setFilterCat] = useState<string>('all')
+  const [newPost, setNewPost] = useState<{ category: string; title: string; subtitle: string }>({ category: 'ljubav', title: '', subtitle: '' })
+  const [creating, setCreating] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   const [users, setUsers] = useState<UserRow[]>([])
   const [saving, setSaving] = useState(false)
@@ -164,6 +166,28 @@ export default function AdminPage() {
     fetchPosts(postsPage)
     setPostsTotal(t => t - 1)
     showToast('Priča obrisana.')
+  }
+
+  async function handleCreateHighlight() {
+    if (!newPost.title.trim() && !newPost.subtitle.trim()) return
+    setCreating(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const { error } = await supabase.from('posts').insert({
+      title: newPost.title,
+      text: newPost.subtitle,
+      category: newPost.category,
+      admin_category: newPost.category,
+      is_admin: true,
+      user_id: session?.user.id,
+    })
+    setCreating(false)
+    if (!error) {
+      setNewPost({ category: newPost.category, title: '', subtitle: '' })
+      fetchAllHighlights()
+      showToast('Nova tema kreirana! ✅')
+    } else {
+      showToast('Greška pri kreiranju.')
+    }
   }
 
   async function handleLogout() {
@@ -481,15 +505,72 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Editor */}
-              <div className="admin-panel">
-                {!highlight ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', gap: 12 }}>
-                    <svg width="40" height="40" viewBox="0 0 24 24" style={{ opacity: 0.2 }} fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                    <span style={{ fontSize: 14 }}>Odaberi temu iz liste da je urediš</span>
+              {/* Desni panel — Novi post + Edit */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                {/* Kreiranje novog posta */}
+                <div className="admin-panel">
+                  <div className="admin-panel-header">
+                    <div className="admin-panel-title">
+                      <div className="admin-panel-title-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                      </div>
+                      Nova tema
+                    </div>
                   </div>
-                ) : (
-                  <>
+                  <div className="admin-editor-form">
+                    <div className="admin-form-group">
+                      <label className="admin-form-label">Kategorija</label>
+                      <select
+                        className="admin-form-input"
+                        value={newPost.category}
+                        onChange={e => setNewPost(p => ({ ...p, category: e.target.value }))}
+                      >
+                        {CATEGORIES.filter(c => c !== 'sve').map(cat => (
+                          <option key={cat} value={cat}>{CAT_EMOJIS[cat]} {CAT_LABELS[cat]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="admin-form-group">
+                      <label className="admin-form-label">Naslov</label>
+                      <input
+                        className="admin-form-input"
+                        placeholder="Naslov teme dana..."
+                        value={newPost.title}
+                        onChange={e => setNewPost(p => ({ ...p, title: e.target.value }))}
+                        maxLength={80}
+                      />
+                      <span className="admin-char-hint">{newPost.title.length}/80</span>
+                    </div>
+                    <div className="admin-form-group">
+                      <label className="admin-form-label">Tekst / poziv na akciju</label>
+                      <textarea
+                        className="admin-form-input admin-form-textarea"
+                        placeholder="Kratki opis ili poziv na akciju..."
+                        value={newPost.subtitle}
+                        onChange={e => setNewPost(p => ({ ...p, subtitle: e.target.value }))}
+                        maxLength={300}
+                      />
+                      <span className="admin-char-hint">{newPost.subtitle.length}/300</span>
+                    </div>
+                    <div className="admin-editor-actions">
+                      <button
+                        className="admin-btn-primary"
+                        onClick={handleCreateHighlight}
+                        disabled={creating || (!newPost.title.trim() && !newPost.subtitle.trim())}
+                      >
+                        {creating ? 'Kreiranje...' : '+ Kreiraj temu'}
+                      </button>
+                      <button className="admin-btn-secondary" onClick={() => setNewPost(p => ({ ...p, title: '', subtitle: '' }))}>
+                        Obriši polja
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Editor postojeće teme */}
+                {highlight && (
+                  <div className="admin-panel">
                     <div className="admin-panel-header">
                       <div className="admin-panel-title">
                         <div className="admin-panel-title-icon">
@@ -497,9 +578,8 @@ export default function AdminPage() {
                         </div>
                         Uredi — {CAT_EMOJIS[highlight.category]} {CAT_LABELS[highlight.category]}
                       </div>
-                      <span className="admin-panel-badge">Live</span>
+                      <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 18 }} onClick={() => setHighlight(null)}>×</button>
                     </div>
-
                     <div className="admin-editor-form">
                       <div className="admin-form-group">
                         <label className="admin-form-label">Naslov</label>
@@ -512,7 +592,6 @@ export default function AdminPage() {
                         />
                         <span className="admin-char-hint">{highlight.title.length}/80</span>
                       </div>
-
                       <div className="admin-form-group">
                         <label className="admin-form-label">Tekst / poziv na akciju</label>
                         <textarea
@@ -524,13 +603,6 @@ export default function AdminPage() {
                         />
                         <span className="admin-char-hint">{highlight.subtitle.length}/300</span>
                       </div>
-
-                      <div className="admin-editor-preview">
-                        <div className="admin-preview-tag">{CAT_EMOJIS[highlight.category]} Tema dana</div>
-                        <div className="admin-preview-title">{highlight.title || 'Naslov teme...'}</div>
-                        <div className="admin-preview-subtitle">{highlight.subtitle || 'Tekst...'}</div>
-                      </div>
-
                       <div className="admin-editor-actions">
                         <button className="admin-btn-primary" onClick={handleSaveHighlight} disabled={saving}>
                           {saving ? 'Čuvanje...' : 'Sačuvaj'}
@@ -538,13 +610,11 @@ export default function AdminPage() {
                         <button className="admin-btn-secondary" onClick={() => highlight.postId && fetchHighlight(highlight.postId)}>
                           Poništi
                         </button>
-                        <button className="admin-btn-secondary" onClick={() => setHighlight(h => h ? { ...h, title: '', subtitle: '' } : h)}>
-                          Obriši polja
-                        </button>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
+
               </div>
 
             </div>

@@ -1203,6 +1203,8 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .admin-form-label { font-size: 11px; font-weight: 700; color: #6E6E7A; text-transform: uppercase; letter-spacing: 0.07em; }
 .admin-form-input { width: 100%; padding: 10px 14px; background: #2A2A2D; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; font-size: 14px; color: #fff; font-family: inherit; transition: border-color 0.2s; }
 .admin-form-input:focus { border-color: rgba(255,149,0,0.5); outline: none; }
+select.admin-form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%236E6E7A'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+select.admin-form-input option { background: #2A2A2D; }
 .admin-form-input::placeholder { color: #6E6E7A; }
 .admin-form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 .admin-char-hint { font-size: 11px; color: #6E6E7A; text-align: right; }
