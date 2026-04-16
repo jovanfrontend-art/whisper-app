@@ -19,6 +19,7 @@ interface Stats { users: number; activeUsers: number; posts: number; comments: n
 interface Post { id: string; text: string; category: string; comment_count: number; created_at: string; is_admin: boolean }
 interface Highlight { category: string; title: string; subtitle: string; postId?: string }
 interface UserRow { id: string; username: string | null; email: string | null; is_admin: boolean; created_at: string }
+interface DayPoint { label: string; value: number }
 
 const CAT_EMOJIS: Record<string, string> = { sve: '✨', ljubav: '❤️', blamovi: '😳', misli: '💭', random: '🎲', posao: '💼', veze: '💔' }
 
@@ -38,6 +39,10 @@ export default function AdminPage() {
   const [creating, setCreating] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   const [users, setUsers] = useState<UserRow[]>([])
+  const [active24h, setActive24h] = useState(0)
+  const [active7d, setActive7d] = useState(0)
+  const [active30d, setActive30d] = useState(0)
+  const [registrationsChart, setRegistrationsChart] = useState<DayPoint[]>([])
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
 
@@ -120,9 +125,40 @@ export default function AdminPage() {
     setUsers(data ?? [])
   }, [])
 
+  const fetchActivityStats = useCallback(async () => {
+    const now = new Date()
+    const ago24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+    const ago7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const ago30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    const [r24, r7, r30, rAll] = await Promise.all([
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen_at', ago24h),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen_at', ago7d),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen_at', ago30d),
+      supabase.from('profiles').select('created_at').gte('created_at', ago30d),
+    ])
+
+    setActive24h(r24.count ?? 0)
+    setActive7d(r7.count ?? 0)
+    setActive30d(r30.count ?? 0)
+
+    // Group registrations by day (last 14 days)
+    const ago14d = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+    const points: DayPoint[] = []
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+      const label = d.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit' })
+      const dateStr = d.toISOString().slice(0, 10)
+      const count = (rAll.data ?? []).filter(r => r.created_at?.slice(0, 10) === dateStr).length
+      points.push({ label, value: count })
+    }
+    setRegistrationsChart(points)
+    void ago14d
+  }, [])
+
   useEffect(() => {
-    if (!loading) { fetchStats(); fetchPosts(); fetchAllHighlights(); fetchUsers() }
-  }, [loading, fetchStats, fetchPosts, fetchAllHighlights, fetchUsers])
+    if (!loading) { fetchStats(); fetchPosts(); fetchAllHighlights(); fetchUsers(); fetchActivityStats() }
+  }, [loading, fetchStats, fetchPosts, fetchAllHighlights, fetchUsers, fetchActivityStats])
 
   useEffect(() => {
     if (loading) return
@@ -346,6 +382,37 @@ export default function AdminPage() {
                   <div className="admin-stat-value">{stats.reactions}</div>
                   <div className="admin-stat-label">ukupno</div>
                 </div>
+              </div>
+
+              {/* Aktivnost korisnika */}
+              <div className="admin-panel">
+                <div className="admin-panel-header">
+                  <div className="admin-panel-title">Aktivni korisnici</div>
+                </div>
+                <div className="admin-activity-row">
+                  <div className="admin-activity-cell">
+                    <div className="admin-activity-value">{active24h}</div>
+                    <div className="admin-activity-label">poslednja 24h</div>
+                  </div>
+                  <div className="admin-activity-divider" />
+                  <div className="admin-activity-cell">
+                    <div className="admin-activity-value">{active7d}</div>
+                    <div className="admin-activity-label">poslednja 7 dana</div>
+                  </div>
+                  <div className="admin-activity-divider" />
+                  <div className="admin-activity-cell">
+                    <div className="admin-activity-value">{active30d}</div>
+                    <div className="admin-activity-label">poslednji mesec</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Registracije po danima */}
+              <div className="admin-panel">
+                <div className="admin-panel-header">
+                  <div className="admin-panel-title">Registracije — poslednih 14 dana</div>
+                </div>
+                <MiniBarChart data={registrationsChart} />
               </div>
 
               {/* Online users */}
@@ -714,6 +781,26 @@ function AdminPostsTable({ posts, onDelete, page, totalCount, onPageChange }: {
           <span className="admin-page-info">{(resolvedPage - 1) * PAGE_SIZE + 1}–{Math.min(resolvedPage * PAGE_SIZE, resolvedTotal)} od {resolvedTotal}</span>
         </div>
       )}
+    </div>
+  )
+}
+
+function MiniBarChart({ data }: { data: DayPoint[] }) {
+  const max = Math.max(...data.map(d => d.value), 1)
+  return (
+    <div className="admin-bar-chart">
+      {data.map((d, i) => (
+        <div key={i} className="admin-bar-col">
+          <div className="admin-bar-wrap">
+            <div
+              className="admin-bar"
+              style={{ height: `${Math.max((d.value / max) * 100, d.value > 0 ? 4 : 0)}%` }}
+              title={`${d.value} registracija`}
+            />
+          </div>
+          <div className="admin-bar-label">{d.label}</div>
+        </div>
+      ))}
     </div>
   )
 }

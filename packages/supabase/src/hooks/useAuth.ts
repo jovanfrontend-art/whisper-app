@@ -21,6 +21,7 @@ export function useAuth(client: SupabaseClient) {
       presenceChannel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await presenceChannel!.track({ user_id: id, username })
+          await client.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', id)
         }
       })
     }

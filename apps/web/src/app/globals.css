@@ -1174,6 +1174,17 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .admin-role-pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
 .admin-role-pill.admin { background: rgba(255,149,0,0.15); color: #FF9500; }
 .admin-role-pill.user { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
+.admin-activity-row { display: flex; align-items: stretch; padding: 8px 0 20px; }
+.admin-activity-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 8px; }
+.admin-activity-value { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -0.03em; }
+.admin-activity-label { font-size: 11px; color: #6E6E7A; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; text-align: center; }
+.admin-activity-divider { width: 1px; background: rgba(255,255,255,0.07); margin: 16px 0; }
+.admin-bar-chart { display: flex; align-items: flex-end; gap: 4px; padding: 8px 24px 20px; height: 140px; }
+.admin-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
+.admin-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.admin-bar { width: 100%; background: rgba(255,149,0,0.5); border-radius: 4px 4px 0 0; min-height: 2px; transition: background 0.2s; }
+.admin-bar:hover { background: #FF9500; }
+.admin-bar-label { font-size: 9px; color: #6E6E7A; white-space: nowrap; transform: rotate(-45deg); transform-origin: center; width: 24px; text-align: center; }
 .admin-online-list { display: flex; flex-direction: column; gap: 4px; padding: 0 0 8px; }
 .admin-online-item { display: flex; align-items: center; gap: 10px; padding: 8px 24px; border-radius: 8px; transition: background 0.15s; }
 .admin-online-item:hover { background: rgba(255,255,255,0.03); }
