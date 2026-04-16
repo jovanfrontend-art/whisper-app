@@ -741,15 +741,15 @@ export default function AdminPage() {
       {toast && <div className="admin-toast show">{toast}</div>}
 
       {confirmModal && typeof document !== 'undefined' && createPortal(
-        <div className="admin-confirm-overlay" onClick={() => setConfirmModal(null)}>
-          <div className="admin-confirm-modal" onClick={e => e.stopPropagation()}>
-            <div className="admin-confirm-icon">
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setConfirmModal(null)}>
+          <div style={{ background: '#1E1E20', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '32px 28px 24px', width: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(255,59,48,0.15)', color: '#FF3B30', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
             </div>
-            <div className="admin-confirm-message">{confirmModal.message}</div>
-            <div className="admin-confirm-actions">
-              <button className="admin-confirm-btn-cancel" onClick={() => setConfirmModal(null)}>Otkaži</button>
-              <button className="admin-confirm-btn-delete" onClick={() => { confirmModal.onConfirm(); setConfirmModal(null) }}>Obriši</button>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', textAlign: 'center' }}>{confirmModal.message}</div>
+            <div style={{ display: 'flex', gap: 10, width: '100%' }}>
+              <button style={{ flex: 1, padding: 11, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }} onClick={() => setConfirmModal(null)}>Otkaži</button>
+              <button style={{ flex: 1, padding: 11, borderRadius: 12, border: 'none', background: '#FF3B30', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }} onClick={() => { confirmModal.onConfirm(); setConfirmModal(null) }}>Obriši</button>
             </div>
           </div>
         </div>,
