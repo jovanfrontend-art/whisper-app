@@ -43,6 +43,7 @@ export default function AdminPage() {
   const [active7d, setActive7d] = useState(0)
   const [active30d, setActive30d] = useState(0)
   const [registrationsChart, setRegistrationsChart] = useState<DayPoint[]>([])
+  const [chartRange, setChartRange] = useState<'7d' | '30d' | '1y'>('30d')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
 
@@ -131,34 +132,47 @@ export default function AdminPage() {
     const ago7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const ago30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-    const [r24, r7, r30, rAll] = await Promise.all([
+    const [r24, r7, r30] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen_at', ago24h),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen_at', ago7d),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen_at', ago30d),
-      supabase.from('profiles').select('created_at').gte('created_at', ago30d),
     ])
-
     setActive24h(r24.count ?? 0)
     setActive7d(r7.count ?? 0)
     setActive30d(r30.count ?? 0)
+  }, [])
 
-    // Group registrations by day (last 14 days)
-    const ago14d = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+  const fetchRegistrationsChart = useCallback(async (range: '7d' | '30d' | '1y') => {
+    const now = new Date()
+    const days = range === '7d' ? 7 : range === '30d' ? 30 : 365
+    const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString()
+    const { data } = await supabase.from('profiles').select('created_at').gte('created_at', since)
+
     const points: DayPoint[] = []
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
-      const label = d.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit' })
-      const dateStr = d.toISOString().slice(0, 10)
-      const count = (rAll.data ?? []).filter(r => r.created_at?.slice(0, 10) === dateStr).length
-      points.push({ label, value: count })
+    if (range === '1y') {
+      // Group by month
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const label = d.toLocaleDateString('sr-RS', { month: '2-digit', year: '2-digit' })
+        const ym = d.toISOString().slice(0, 7)
+        const count = (data ?? []).filter(r => r.created_at?.slice(0, 7) === ym).length
+        points.push({ label, value: count })
+      }
+    } else {
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+        const label = d.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit' })
+        const dateStr = d.toISOString().slice(0, 10)
+        const count = (data ?? []).filter(r => r.created_at?.slice(0, 10) === dateStr).length
+        points.push({ label, value: count })
+      }
     }
     setRegistrationsChart(points)
-    void ago14d
   }, [])
 
   useEffect(() => {
-    if (!loading) { fetchStats(); fetchPosts(); fetchAllHighlights(); fetchUsers(); fetchActivityStats() }
-  }, [loading, fetchStats, fetchPosts, fetchAllHighlights, fetchUsers, fetchActivityStats])
+    if (!loading) { fetchStats(); fetchPosts(); fetchAllHighlights(); fetchUsers(); fetchActivityStats(); fetchRegistrationsChart(chartRange) }
+  }, [loading, fetchStats, fetchPosts, fetchAllHighlights, fetchUsers, fetchActivityStats, fetchRegistrationsChart, chartRange])
 
   useEffect(() => {
     if (loading) return
@@ -410,7 +424,18 @@ export default function AdminPage() {
 
                 <div className="admin-panel">
                   <div className="admin-panel-header">
-                    <div className="admin-panel-title">Registracije — 14 dana</div>
+                    <div className="admin-panel-title">Registracije</div>
+                    <div className="admin-chart-range-btns">
+                      {(['7d', '30d', '1y'] as const).map(r => (
+                        <button
+                          key={r}
+                          className={`admin-chart-range-btn${chartRange === r ? ' active' : ''}`}
+                          onClick={() => { setChartRange(r); fetchRegistrationsChart(r) }}
+                        >
+                          {r === '7d' ? '7 dana' : r === '30d' ? '30 dana' : 'Godina'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <MiniBarChart data={registrationsChart} />
                 </div>
@@ -792,11 +817,11 @@ function MiniBarChart({ data }: { data: DayPoint[] }) {
     <div className="admin-bar-chart">
       {data.map((d, i) => (
         <div key={i} className="admin-bar-col">
+          <div className="admin-bar-value">{d.value > 0 ? d.value : ''}</div>
           <div className="admin-bar-wrap">
             <div
               className="admin-bar"
               style={{ height: `${Math.max((d.value / max) * 100, d.value > 0 ? 4 : 0)}%` }}
-              title={`${d.value} registracija`}
             />
           </div>
           <div className="admin-bar-label">{d.label}</div>

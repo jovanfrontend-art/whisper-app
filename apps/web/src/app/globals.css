@@ -1182,8 +1182,13 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .admin-activity-value { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -0.03em; }
 .admin-activity-label { font-size: 11px; color: #6E6E7A; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; text-align: center; }
 .admin-activity-divider { width: 1px; background: rgba(255,255,255,0.07); margin: 16px 0; }
-.admin-bar-chart { display: flex; align-items: flex-end; gap: 4px; padding: 8px 24px 20px; height: 140px; }
-.admin-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
+.admin-chart-range-btns { display: flex; gap: 4px; }
+.admin-chart-range-btn { padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: none; color: #6E6E7A; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.admin-chart-range-btn:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+.admin-chart-range-btn.active { background: rgba(255,149,0,0.15); color: #FF9500; border-color: rgba(255,149,0,0.3); }
+.admin-bar-chart { display: flex; align-items: flex-end; gap: 4px; padding: 8px 24px 20px; height: 160px; }
+.admin-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+.admin-bar-value { font-size: 10px; font-weight: 700; color: #FF9500; min-height: 14px; }
 .admin-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; }
 .admin-bar { width: 100%; background: rgba(255,149,0,0.5); border-radius: 4px 4px 0 0; min-height: 2px; transition: background 0.2s; }
 .admin-bar:hover { background: #FF9500; }
