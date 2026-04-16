@@ -384,35 +384,36 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Aktivnost korisnika */}
-              <div className="admin-panel">
-                <div className="admin-panel-header">
-                  <div className="admin-panel-title">Aktivni korisnici</div>
+              {/* Aktivnost + Registracije — 50/50 */}
+              <div className="admin-half-row">
+                <div className="admin-panel">
+                  <div className="admin-panel-header">
+                    <div className="admin-panel-title">Aktivni korisnici</div>
+                  </div>
+                  <div className="admin-activity-row">
+                    <div className="admin-activity-cell">
+                      <div className="admin-activity-value">{active24h}</div>
+                      <div className="admin-activity-label">poslednja 24h</div>
+                    </div>
+                    <div className="admin-activity-divider" />
+                    <div className="admin-activity-cell">
+                      <div className="admin-activity-value">{active7d}</div>
+                      <div className="admin-activity-label">poslednja 7 dana</div>
+                    </div>
+                    <div className="admin-activity-divider" />
+                    <div className="admin-activity-cell">
+                      <div className="admin-activity-value">{active30d}</div>
+                      <div className="admin-activity-label">poslednji mesec</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="admin-activity-row">
-                  <div className="admin-activity-cell">
-                    <div className="admin-activity-value">{active24h}</div>
-                    <div className="admin-activity-label">poslednja 24h</div>
-                  </div>
-                  <div className="admin-activity-divider" />
-                  <div className="admin-activity-cell">
-                    <div className="admin-activity-value">{active7d}</div>
-                    <div className="admin-activity-label">poslednja 7 dana</div>
-                  </div>
-                  <div className="admin-activity-divider" />
-                  <div className="admin-activity-cell">
-                    <div className="admin-activity-value">{active30d}</div>
-                    <div className="admin-activity-label">poslednji mesec</div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Registracije po danima */}
-              <div className="admin-panel">
-                <div className="admin-panel-header">
-                  <div className="admin-panel-title">Registracije — poslednih 14 dana</div>
+                <div className="admin-panel">
+                  <div className="admin-panel-header">
+                    <div className="admin-panel-title">Registracije — 14 dana</div>
+                  </div>
+                  <MiniBarChart data={registrationsChart} />
                 </div>
-                <MiniBarChart data={registrationsChart} />
               </div>
 
               {/* Online users */}
