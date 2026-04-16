@@ -549,9 +549,7 @@ export default function AdminPage() {
                         placeholder="Kratki opis ili poziv na akciju..."
                         value={newPost.subtitle}
                         onChange={e => setNewPost(p => ({ ...p, subtitle: e.target.value }))}
-                        maxLength={300}
                       />
-                      <span className="admin-char-hint">{newPost.subtitle.length}/300</span>
                     </div>
                     <div className="admin-editor-actions">
                       <button
@@ -599,9 +597,7 @@ export default function AdminPage() {
                           placeholder="Kratki opis / poziv na akciju..."
                           value={highlight.subtitle}
                           onChange={e => setHighlight(h => h ? { ...h, subtitle: e.target.value } : h)}
-                          maxLength={300}
                         />
-                        <span className="admin-char-hint">{highlight.subtitle.length}/300</span>
                       </div>
                       <div className="admin-editor-actions">
                         <button className="admin-btn-primary" onClick={handleSaveHighlight} disabled={saving}>
