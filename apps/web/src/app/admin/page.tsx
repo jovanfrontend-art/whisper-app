@@ -451,36 +451,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Online users */}
-              {onlineUsers.length > 0 && (
-                <div className="admin-panel">
-                  <div className="admin-panel-header">
-                    <div className="admin-panel-title">
-                      <span className="admin-stat-active-dot" style={{ display: 'inline-block' }} />
-                      Online sada
-                    </div>
-                    <span className="admin-panel-badge">{onlineUsers.length}</span>
-                  </div>
-                  <div className="admin-online-list">
-                    {onlineUsers.map((username, i) => (
-                      <div key={i} className="admin-online-item">
-                        <div className="admin-online-avatar">{username[0]?.toUpperCase()}</div>
-                        <span className="admin-online-name">{username}</span>
-                        <span className="admin-stat-active-dot" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Recent posts preview */}
-              <div className="admin-panel">
-                <div className="admin-panel-header">
-                  <div className="admin-panel-title">Nedavne priče</div>
-                  <button className="admin-panel-action" onClick={() => setSection('posts')}>Sve priče →</button>
-                </div>
-                <AdminPostsTable posts={posts.slice(0, 5)} onDelete={handleDeletePost} />
-              </div>
             </>
           )}
 
