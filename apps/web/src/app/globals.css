@@ -1177,22 +1177,23 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .admin-role-pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
 .admin-role-pill.admin { background: rgba(255,149,0,0.15); color: #FF9500; }
 .admin-role-pill.user { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
-.admin-activity-row { display: flex; align-items: stretch; padding: 8px 0 20px; }
-.admin-activity-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 8px; }
-.admin-activity-value { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -0.03em; }
-.admin-activity-label { font-size: 11px; color: #6E6E7A; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; text-align: center; }
-.admin-activity-divider { width: 1px; background: rgba(255,255,255,0.07); margin: 16px 0; }
-.admin-chart-range-btns { display: flex; gap: 4px; }
-.admin-chart-range-btn { padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: none; color: #6E6E7A; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-.admin-chart-range-btn:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
-.admin-chart-range-btn.active { background: rgba(255,149,0,0.15); color: #FF9500; border-color: rgba(255,149,0,0.3); }
-.admin-bar-chart { display: flex; align-items: flex-end; gap: 4px; padding: 8px 24px 20px; height: 160px; }
-.admin-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
-.admin-bar-value { font-size: 10px; font-weight: 700; color: #FF9500; min-height: 14px; }
+.admin-activity-row { display: flex; align-items: stretch; padding: 20px 0 8px; gap: 0; }
+.admin-activity-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; border-radius: 12px; transition: background 0.15s; }
+.admin-activity-cell:hover { background: rgba(255,255,255,0.03); }
+.admin-activity-value { font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -0.04em; line-height: 1; }
+.admin-activity-label { font-size: 10px; color: #6E6E7A; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; text-align: center; line-height: 1.4; }
+.admin-activity-divider { width: 1px; background: rgba(255,255,255,0.06); margin: 12px 0; align-self: stretch; flex-shrink: 0; }
+.admin-chart-range-btns { display: flex; gap: 6px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 4px; }
+.admin-chart-range-btn { padding: 5px 12px; border-radius: 7px; border: none; background: none; color: #6E6E7A; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.admin-chart-range-btn:hover { color: #fff; }
+.admin-chart-range-btn.active { background: #FF9500; color: #000; }
+.admin-bar-chart { display: flex; align-items: flex-end; gap: 3px; padding: 4px 20px 24px; height: 160px; }
+.admin-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; min-width: 0; }
+.admin-bar-value { font-size: 10px; font-weight: 700; color: #FF9500; min-height: 13px; line-height: 1; }
 .admin-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; }
-.admin-bar { width: 100%; background: rgba(255,149,0,0.5); border-radius: 4px 4px 0 0; min-height: 2px; transition: background 0.2s; }
+.admin-bar { width: 100%; background: rgba(255,149,0,0.4); border-radius: 3px 3px 0 0; min-height: 2px; transition: background 0.2s; }
 .admin-bar:hover { background: #FF9500; }
-.admin-bar-label { font-size: 9px; color: #6E6E7A; white-space: nowrap; transform: rotate(-45deg); transform-origin: center; width: 24px; text-align: center; }
+.admin-bar-label { font-size: 9px; color: #6E6E7A; white-space: nowrap; transform: rotate(-45deg); transform-origin: center; width: 20px; text-align: center; overflow: hidden; }
 .admin-online-list { display: flex; flex-direction: column; gap: 4px; padding: 0 0 8px; }
 .admin-online-item { display: flex; align-items: center; gap: 10px; padding: 8px 24px; border-radius: 8px; transition: background 0.15s; }
 .admin-online-item:hover { background: rgba(255,255,255,0.03); }
