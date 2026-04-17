@@ -60,50 +60,46 @@ export default function AuthModal({ open, onClose }: Props) {
           </p>
           <button className="btn-guest" style={{ marginTop: 20 }} onClick={onClose}>{t(lang, 'closeBtn')}</button>
         </div>
-      ) : tab === 'login' ? (
-        <>
-          <div className="auth-tabs">
-            <button className={`auth-tab${tab === 'login' ? ' active' : ''}`} onClick={() => { setTab('login'); setError('') }}>{t(lang, 'loginTab')}</button>
-            <button className={`auth-tab${tab === 'signup' ? ' active' : ''}`} onClick={() => { setTab('signup'); setError('') }}>{t(lang, 'signupTab')}</button>
-          </div>
-          <form className="auth-form" onSubmit={handleLogin}>
-            <div className="form-field">
-              <label className="form-label">{t(lang, 'emailLabel')}</label>
-              <input className="form-input" type="email" placeholder={t(lang, 'emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div className="form-field">
-              <label className="form-label">{t(lang, 'passwordLabel')}</label>
-              <input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
-            </div>
-            {error && <p style={{ fontSize: 13, color: '#FF6961' }}>{error}</p>}
-            <button className="btn-submit" type="submit">{t(lang, 'loginBtn')}</button>
-            <div className="form-divider">{t(lang, 'orDivider')}</div>
-            <button className="btn-guest" type="button" onClick={onClose}>{t(lang, 'guestBtn')}</button>
-          </form>
-        </>
       ) : (
         <>
           <div className="auth-tabs">
             <button className={`auth-tab${tab === 'login' ? ' active' : ''}`} onClick={() => { setTab('login'); setError('') }}>{t(lang, 'loginTab')}</button>
             <button className={`auth-tab${tab === 'signup' ? ' active' : ''}`} onClick={() => { setTab('signup'); setError('') }}>{t(lang, 'signupTab')}</button>
           </div>
-          <form className="auth-form" onSubmit={handleSignup}>
-            <div className="form-field">
-              <label className="form-label">{t(lang, 'usernameLabel')}</label>
-              <input className="form-input" type="text" placeholder={t(lang, 'usernamePlaceholder')} value={username} onChange={e => setUsername(e.target.value)} required />
-            </div>
-            <div className="form-field">
-              <label className="form-label">{t(lang, 'emailLabel')}</label>
-              <input className="form-input" type="email" placeholder={t(lang, 'emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div className="form-field">
-              <label className="form-label">{t(lang, 'passwordLabel')}</label>
-              <input className="form-input" type="password" placeholder={t(lang, 'passwordPlaceholder')} value={password} onChange={e => setPassword(e.target.value)} required />
-            </div>
-            <LanguagePicker value={language} onChange={setLanguage} label={t(lang, 'languageLabel')} />
-            {error && <p style={{ fontSize: 13, color: '#FF6961' }}>{error}</p>}
-            <button className="btn-submit" type="submit">{t(lang, 'signupBtn')}</button>
-          </form>
+          {tab === 'login' ? (
+            <form className="auth-form" onSubmit={handleLogin}>
+              <div className="form-field">
+                <label className="form-label">{t(lang, 'emailLabel')}</label>
+                <input className="form-input" type="email" placeholder={t(lang, 'emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+              <div className="form-field">
+                <label className="form-label">{t(lang, 'passwordLabel')}</label>
+                <input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+              </div>
+              {error && <p style={{ fontSize: 13, color: '#FF6961' }}>{error}</p>}
+              <button className="btn-submit" type="submit">{t(lang, 'loginBtn')}</button>
+              <div className="form-divider">{t(lang, 'orDivider')}</div>
+              <button className="btn-guest" type="button" onClick={onClose}>{t(lang, 'guestBtn')}</button>
+            </form>
+          ) : (
+            <form className="auth-form" onSubmit={handleSignup}>
+              <div className="form-field">
+                <label className="form-label">{t(lang, 'usernameLabel')}</label>
+                <input className="form-input" type="text" placeholder={t(lang, 'usernamePlaceholder')} value={username} onChange={e => setUsername(e.target.value)} required />
+              </div>
+              <div className="form-field">
+                <label className="form-label">{t(lang, 'emailLabel')}</label>
+                <input className="form-input" type="email" placeholder={t(lang, 'emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+              <div className="form-field">
+                <label className="form-label">{t(lang, 'passwordLabel')}</label>
+                <input className="form-input" type="password" placeholder={t(lang, 'passwordPlaceholder')} value={password} onChange={e => setPassword(e.target.value)} required />
+              </div>
+              <LanguagePicker value={language} onChange={setLanguage} label={t(lang, 'languageLabel')} />
+              {error && <p style={{ fontSize: 13, color: '#FF6961' }}>{error}</p>}
+              <button className="btn-submit" type="submit">{t(lang, 'signupBtn')}</button>
+            </form>
+          )}
         </>
       )}
     </Modal>
