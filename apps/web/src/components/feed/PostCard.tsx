@@ -5,11 +5,13 @@ import { formatCount } from '@whisper/shared'
 import Avatar from '@/components/ui/Avatar'
 import ReactionBar from '@/components/ui/ReactionBar'
 import { useRouter } from 'next/navigation'
+import { t, tCat } from '@/lib/i18n'
 
-export default function PostCard({ post, index = 0 }: { post: Post; index?: number }) {
-  const { getPostAuthor, toggleReaction } = useStore()
+export default function PostCard({ post, index = 0, translatedText, translating }: { post: Post; index?: number; translatedText?: string; translating?: boolean }) {
+  const { getPostAuthor, toggleReaction, user } = useStore()
   const router = useRouter()
   const author = getPostAuthor(post)
+  const lang = user?.language
 
   const catClass = post.category ? `cat-${post.category.toLowerCase()}` : ''
 
@@ -27,10 +29,18 @@ export default function PostCard({ post, index = 0 }: { post: Post; index?: numb
             <span className="post-card-time">{post.time}</span>
           </div>
         </div>
-        <span className={`cat-pill ${catClass}`}>{post.category}</span>
+        <span className={`cat-pill ${catClass}`}>{tCat(lang, post.category) || post.category}</span>
       </div>
 
-      <p className="post-text">{post.text}</p>
+      {translating ? (
+        <div className="post-text-skeleton">
+          <div className="skeleton" style={{ height: 14, borderRadius: 6, marginBottom: 6 }} />
+          <div className="skeleton" style={{ height: 14, borderRadius: 6, marginBottom: 6, width: '85%' }} />
+          <div className="skeleton" style={{ height: 14, borderRadius: 6, width: '60%' }} />
+        </div>
+      ) : (
+        <p className="post-text">{translatedText || post.text}</p>
+      )}
 
       {post.image && (
         <div className="post-image-wrap">
@@ -49,13 +59,13 @@ export default function PostCard({ post, index = 0 }: { post: Post; index?: numb
       <div className="post-card-footer">
         <div className="post-comments-info">
           <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          {formatCount(post.comments.length)} komentara
+          {formatCount(post.comments.length)} {t(lang, 'commentCount')}
         </div>
         <button
           className="btn-enter-thread"
           onClick={e => { e.stopPropagation(); router.push(`/thread/${post.id}`) }}
         >
-          Ući u priču
+          {t(lang, 'enterThread')}
           <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 18l6-6-6-6"/></svg>
         </button>
       </div>

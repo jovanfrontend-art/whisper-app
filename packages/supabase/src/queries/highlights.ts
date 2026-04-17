@@ -8,7 +8,18 @@ export async function getDailyHighlight(
   userId: string | null
 ): Promise<DailyHighlight | null> {
   const { data } = await client.from('daily_highlights').select('*').eq('category', cat).single()
-  if (!data || !data.post_id) return null
+  if (!data || (!data.title && !data.subtitle)) return null
+
+  if (!data.post_id) {
+    return {
+      title: data.title,
+      subtitle: data.subtitle ?? '',
+      reactions: {},
+      userReactions: [],
+      commentCount: 0,
+      postId: null,
+    }
+  }
 
   const sessionId = getSessionId()
   const { data: reactions } = await client

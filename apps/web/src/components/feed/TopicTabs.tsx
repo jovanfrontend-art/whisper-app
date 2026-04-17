@@ -3,9 +3,11 @@ import { useRef } from 'react'
 import { useStore } from '@whisper/supabase'
 import { TOPICS } from '@whisper/shared'
 import type { Category } from '@whisper/shared'
+import { t, tCat } from '@/lib/i18n'
 
 export default function TopicTabs() {
-  const { activeCategory, setActiveCategory } = useStore()
+  const { activeCategory, setActiveCategory, user } = useStore()
+  const lang = user?.language
   const touchStartX = useRef<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
@@ -21,7 +23,7 @@ export default function TopicTabs() {
     const diff = touchStartX.current - e.changedTouches[0].clientX
     if (Math.abs(diff) < 50) return
 
-    const currentIndex = TOPICS.findIndex(t => t.id === activeCategory)
+    const currentIndex = TOPICS.findIndex(tp => tp.id === activeCategory)
     if (diff > 0 && currentIndex < TOPICS.length - 1) {
       setActiveCategory(TOPICS[currentIndex + 1].id as Category)
     } else if (diff < 0 && currentIndex > 0) {
@@ -49,7 +51,7 @@ export default function TopicTabs() {
 
   return (
     <section className="topics-section">
-      <div className="topics-label">Teme</div>
+      <div className="topics-label">{t(lang, 'navTopics')}</div>
       <div
         ref={scrollRef}
         className="topics-scroll"
@@ -61,14 +63,14 @@ export default function TopicTabs() {
         onMouseLeave={handleMouseUp}
         style={{ cursor: isDragging.current ? 'grabbing' : 'grab' }}
       >
-        {TOPICS.map(t => (
+        {TOPICS.map(tp => (
           <button
-            key={t.id}
-            className={`topic-chip${activeCategory === t.id ? ' active' : ''}`}
-            onClick={() => setActiveCategory(t.id as Category)}
+            key={tp.id}
+            className={`topic-chip${activeCategory === tp.id ? ' active' : ''}`}
+            onClick={() => setActiveCategory(tp.id as Category)}
           >
-            <span className="topic-chip-emoji">{t.emoji}</span>
-            {t.label}
+            <span className="topic-chip-emoji">{tp.emoji}</span>
+            {tCat(lang, tp.id)}
           </button>
         ))}
       </div>

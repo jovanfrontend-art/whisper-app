@@ -44,6 +44,7 @@ export interface User {
   color: string
   avatarUrl?: string | null
   isAdmin?: boolean
+  language?: string
 }
 
 export interface DailyHighlight {
@@ -52,7 +53,7 @@ export interface DailyHighlight {
   reactions: Record<string, number>
   userReactions: string[]
   commentCount: number
-  postId: string
+  postId: string | null
 }
 
 export interface Notification {

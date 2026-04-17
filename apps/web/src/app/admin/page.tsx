@@ -4,6 +4,21 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { createWhisperClient } from '@whisper/supabase'
 import { useRouter } from 'next/navigation'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 const supabase = createWhisperClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co',
@@ -14,13 +29,14 @@ const PAGE_SIZE = 10
 const CATEGORIES = ['sve', 'ljubav', 'blamovi', 'misli', 'random', 'posao', 'veze']
 const CAT_LABELS: Record<string, string> = { sve: 'Sve', ljubav: 'Ljubav', blamovi: 'Blamovi', misli: 'Misli', random: 'Random', posao: 'Posao', veze: 'Veze' }
 
-type Section = 'dashboard' | 'posts' | 'tema' | 'users'
+type Section = 'dashboard' | 'posts' | 'tema' | 'users' | 'queue'
 
 interface Stats { users: number; activeUsers: number; posts: number; comments: number; reactions: number }
 interface Post { id: string; text: string; category: string; comment_count: number; created_at: string; is_admin: boolean }
 interface Highlight { category: string; title: string; subtitle: string; postId?: string }
 interface UserRow { id: string; username: string | null; email: string | null; is_admin: boolean; created_at: string }
 interface DayPoint { label: string; value: number }
+interface QueueItem { id: string; category: string; title: string; subtitle: string; sort_order: number; is_published: boolean; published_at: string | null; created_at: string }
 
 const CAT_EMOJIS: Record<string, string> = { sve: '✨', ljubav: '❤️', blamovi: '😳', misli: '💭', random: '🎲', posao: '💼', veze: '💔' }
 
@@ -48,6 +64,65 @@ export default function AdminPage() {
   const [chartRange, setChartRange] = useState<'7d' | '30d' | '1y'>('30d')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
+  const [queueItems, setQueueItems] = useState<QueueItem[]>([])
+  const [queueFilter, setQueueFilter] = useState<string>('all')
+  const [newQueueItem, setNewQueueItem] = useState({ category: 'ljubav', title: '', subtitle: '' })
+  const [addingQueue, setAddingQueue] = useState(false)
+  const [queueTab, setQueueTab] = useState<'queue' | 'active'>('queue')
+  const [selectedQueueItem, setSelectedQueueItem] = useState<QueueItem | null>(null)
+  const [activating, setActivating] = useState(false)
+  const [savingQueueItem, setSavingQueueItem] = useState(false)
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
+  const saveQueueItemEdit = useCallback(async () => {
+    if (!selectedQueueItem) return
+    setSavingQueueItem(true)
+    await supabase.from('highlight_queue')
+      .update({ title: selectedQueueItem.title, subtitle: selectedQueueItem.subtitle })
+      .eq('id', selectedQueueItem.id)
+    setQueueItems(prev => prev.map(q => q.id === selectedQueueItem.id ? { ...selectedQueueItem } : q))
+    setSavingQueueItem(false)
+    showToast('Tema sačuvana!')
+  }, [selectedQueueItem, showToast])
+
+  const activateQueueItem = useCallback(async () => {
+    if (!selectedQueueItem) return
+    if (!selectedQueueItem.title?.trim() && !selectedQueueItem.subtitle?.trim()) {
+      showToast('❌ Tema mora imati naslov ili tekst da bi se aktivirala.')
+      return
+    }
+    setActivating(true)
+    await supabase.from('daily_highlights')
+      .upsert({ category: selectedQueueItem.category, title: selectedQueueItem.title, subtitle: selectedQueueItem.subtitle, post_id: null, updated_at: new Date().toISOString() }, { onConflict: 'category' })
+    await supabase.from('highlight_queue')
+      .update({ is_published: true, published_at: new Date().toISOString() })
+      .eq('id', selectedQueueItem.id)
+    setQueueItems(prev => prev.map(q => q.id === selectedQueueItem.id ? { ...q, is_published: true, published_at: new Date().toISOString() } : q))
+    setActivating(false)
+    setSelectedQueueItem(null)
+    showToast(`✅ Aktivirana tema za ${CAT_LABELS[selectedQueueItem.category]}!`)
+  }, [selectedQueueItem, showToast])
+
+  const handleQueueReorder = useCallback((event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    setQueueItems(prev => {
+      const filtered = prev.filter(q => queueFilter === 'all' || q.category === queueFilter)
+      const rest = prev.filter(q => queueFilter !== 'all' && q.category !== queueFilter)
+      const oldIndex = filtered.findIndex(q => q.id === active.id)
+      const newIndex = filtered.findIndex(q => q.id === over.id)
+      const reordered = arrayMove(filtered, oldIndex, newIndex)
+      const updated = reordered.map((item, i) => ({ ...item, sort_order: i * 1000 }))
+
+      Promise.all(updated.map(item =>
+        supabase.from('highlight_queue').update({ sort_order: item.sort_order }).eq('id', item.id)
+      ))
+
+      return [...rest, ...updated]
+    })
+  }, [queueFilter])
 
   function showToast(msg: string) {
     setToast(msg)
@@ -144,6 +219,46 @@ export default function AdminPage() {
     setActive30d(r30.count ?? 0)
   }, [])
 
+  const fetchQueueItems = useCallback(async () => {
+    const { data } = await supabase
+      .from('highlight_queue')
+      .select('*')
+      .order('is_published', { ascending: true })
+      .order('sort_order', { ascending: true })
+    setQueueItems(data ?? [])
+  }, [])
+
+  const addQueueItem = useCallback(async () => {
+    if (!newQueueItem.title.trim() && !newQueueItem.subtitle.trim()) return
+    setAddingQueue(true)
+    const { error } = await supabase.from('highlight_queue').insert({
+      category: newQueueItem.category,
+      title: newQueueItem.title,
+      subtitle: newQueueItem.subtitle,
+      sort_order: Date.now(),
+      is_published: false,
+    })
+    setAddingQueue(false)
+    if (!error) {
+      setNewQueueItem(q => ({ ...q, title: '', subtitle: '' }))
+      fetchQueueItems()
+      showToast('Tema dodata u red! ✅')
+    } else {
+      showToast('Greška pri dodavanju.')
+    }
+  }, [newQueueItem, fetchQueueItems, showToast])
+
+  const deleteQueueItem = useCallback((id: string) => {
+    setConfirmModal({
+      message: 'Obrisati ovu temu iz reda?',
+      onConfirm: async () => {
+        await supabase.from('highlight_queue').delete().eq('id', id)
+        setQueueItems(prev => prev.filter(x => x.id !== id))
+        showToast('Tema obrisana.')
+      }
+    })
+  }, [showToast])
+
   const fetchRegistrationsChart = useCallback(async (range: '7d' | '30d' | '1y') => {
     const now = new Date()
     const days = range === '7d' ? 7 : range === '30d' ? 30 : 365
@@ -173,8 +288,8 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => {
-    if (!loading) { fetchStats(); fetchPosts(); fetchAllHighlights(); fetchUsers(); fetchActivityStats(); fetchRegistrationsChart(chartRange) }
-  }, [loading, fetchStats, fetchPosts, fetchAllHighlights, fetchUsers, fetchActivityStats, fetchRegistrationsChart, chartRange])
+    if (!loading) { fetchStats(); fetchPosts(); fetchAllHighlights(); fetchUsers(); fetchActivityStats(); fetchRegistrationsChart(chartRange); fetchQueueItems() }
+  }, [loading, fetchStats, fetchPosts, fetchAllHighlights, fetchUsers, fetchActivityStats, fetchRegistrationsChart, chartRange, fetchQueueItems])
 
   useEffect(() => {
     if (loading) return
@@ -212,6 +327,28 @@ export default function AdminPage() {
         setAllHighlights(h => h.filter(x => x.postId !== postId))
         if (highlight?.postId === postId) setHighlight(null)
         showToast('Tema obrisana.')
+      }
+    })
+  }
+
+  function handleDeleteUser(u: UserRow) {
+    if (u.is_admin) { showToast('Ne možeš obrisati admin korisnika.'); return }
+    setConfirmModal({
+      message: `Obrisati korisnika "${u.username}"?`,
+      onConfirm: async () => {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch('/api/admin/delete-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: u.id, requesterId: session?.user.id }),
+        })
+        if (res.ok) {
+          setUsers(prev => prev.filter(x => x.id !== u.id))
+          setStats(s => ({ ...s, users: s.users - 1 }))
+          showToast('Korisnik obrisan.')
+        } else {
+          showToast('Greška pri brisanju korisnika.')
+        }
       }
     })
   }
@@ -314,9 +451,10 @@ export default function AdminPage() {
           </button>
 
           <div className="admin-nav-label" style={{ marginTop: 12 }}>Alati</div>
-          <button className={`admin-nav-link${section === 'tema' ? ' active' : ''}`} onClick={() => setSection('tema')}>
-            <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-            Tema dana
+          <button className={`admin-nav-link${section === 'queue' ? ' active' : ''}`} onClick={() => setSection('queue')}>
+            <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+            Red čekanja
+            <span className="admin-nav-badge">{queueItems.filter(q => !q.is_published).length}</span>
           </button>
         </nav>
 
@@ -339,10 +477,10 @@ export default function AdminPage() {
         <header className="admin-header">
           <div>
             <div className="admin-header-title">
-              {section === 'dashboard' ? 'Dashboard' : section === 'posts' ? 'Priče' : section === 'users' ? 'Korisnici' : 'Tema dana'}
+              {section === 'dashboard' ? 'Dashboard' : section === 'posts' ? 'Priče' : section === 'users' ? 'Korisnici' : 'Red čekanja'}
             </div>
             <div className="admin-header-sub">
-              {section === 'dashboard' ? 'Pregled statistika i aktivnosti' : section === 'posts' ? 'Upravljanje pričama korisnika' : section === 'users' ? 'Pregled svih registrovanih korisnika' : 'Uredi temu dana po kategoriji'}
+              {section === 'dashboard' ? 'Pregled statistika i aktivnosti' : section === 'posts' ? 'Upravljanje pričama korisnika' : section === 'users' ? 'Pregled svih registrovanih korisnika' : 'Upravljanje temama dana i automatska rotacija'}
             </div>
           </div>
           <div className="admin-header-live">
@@ -470,6 +608,7 @@ export default function AdminPage() {
                       <th>Status</th>
                       <th>Uloga</th>
                       <th>Registrovan</th>
+                      <th>Akcije</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -497,11 +636,16 @@ export default function AdminPage() {
                               : <span className="admin-role-pill user">Korisnik</span>}
                           </td>
                           <td style={{ color: 'var(--text-3)', fontSize: 12 }}>{joined}</td>
+                          <td>
+                            {!u.is_admin && (
+                              <button className="admin-btn-delete" onClick={() => handleDeleteUser(u)}>Obriši</button>
+                            )}
+                          </td>
                         </tr>
                       )
                     })}
                     {users.length === 0 && (
-                      <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 32 }}>Nema korisnika</td></tr>
+                      <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 32 }}>Nema korisnika</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -525,164 +669,185 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* TEMA DANA */}
-          {section === 'tema' && (
+
+          {/* QUEUE */}
+          {section === 'queue' && (
+            <>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              <button
+                onClick={() => setQueueTab('queue')}
+                style={{ padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, background: queueTab === 'queue' ? '#FF9500' : 'rgba(255,255,255,0.07)', color: queueTab === 'queue' ? '#fff' : 'rgba(255,255,255,0.5)' }}
+              >
+                Red čekanja
+              </button>
+              <button
+                onClick={() => setQueueTab('active')}
+                style={{ padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, background: queueTab === 'active' ? '#FF9500' : 'rgba(255,255,255,0.07)', color: queueTab === 'active' ? '#fff' : 'rgba(255,255,255,0.5)' }}
+              >
+                Aktivne teme
+              </button>
+            </div>
+            {queueTab === 'active' && (
+            <ActiveHighlightsPanel
+              supabase={supabase}
+              CAT_EMOJIS={CAT_EMOJIS}
+              CAT_LABELS={CAT_LABELS}
+              CATEGORIES={CATEGORIES}
+              showToast={showToast}
+            />
+            )}
+            {queueTab === 'queue' && (
             <div className="admin-content-grid">
 
-              {/* Lista tema */}
+              {/* Lista u redu */}
               <div className="admin-panel">
                 <div className="admin-panel-header">
-                  <div className="admin-panel-title">Pregled tema</div>
-                  <span className="admin-panel-badge">{allHighlights.length} tema</span>
+                  <div className="admin-panel-title">Teme u redu</div>
+                  <span className="admin-panel-badge">{queueItems.filter(q => !q.is_published).length} čeka</span>
                 </div>
                 <div style={{ padding: '0 16px 12px' }}>
                   <div className="admin-cat-selector">
-                    <button
-                      className={`admin-cat-btn${filterCat === 'all' ? ' active' : ''}`}
-                      onClick={() => setFilterCat('all')}
-                    >
-                      Sve
-                    </button>
+                    <button className={`admin-cat-btn${queueFilter === 'all' ? ' active' : ''}`} onClick={() => setQueueFilter('all')}>Sve</button>
                     {CATEGORIES.filter(c => c !== 'sve').map(cat => (
-                      <button
-                        key={cat}
-                        className={`admin-cat-btn${filterCat === cat ? ' active' : ''}`}
-                        onClick={() => setFilterCat(cat)}
-                      >
+                      <button key={cat} className={`admin-cat-btn${queueFilter === cat ? ' active' : ''}`} onClick={() => setQueueFilter(cat)}>
                         {CAT_EMOJIS[cat]} {CAT_LABELS[cat]}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div className="admin-highlights-list">
-                  {allHighlights
-                    .filter(h => filterCat === 'all' || h.category === filterCat)
-                    .map(h => (
-                      <div
-                        key={h.postId}
-                        className={`admin-highlight-item${highlight?.postId === h.postId ? ' active' : ''}`}
-                        onClick={() => setHighlight(h)}
-                      >
-                        <div className="admin-highlight-item-top">
-                          <span className={`cat-pill cat-${h.category}`}>{CAT_EMOJIS[h.category]} {CAT_LABELS[h.category]}</span>
-                          <button
-                            className="admin-highlight-delete"
-                            onClick={e => { e.stopPropagation(); handleDeleteHighlight(h.postId!) }}
-                            title="Obriši"
-                          >×</button>
-                        </div>
-                        <div className="admin-highlight-item-title">{h.title || <em style={{ opacity: 0.4 }}>Bez naslova</em>}</div>
-                        <div className="admin-highlight-item-sub">{h.subtitle || <em style={{ opacity: 0.4 }}>Bez teksta</em>}</div>
-                      </div>
-                    ))}
+                  {(() => {
+                    const filtered = queueItems.filter(q => queueFilter === 'all' || q.category === queueFilter)
+                    if (filtered.length === 0) return (
+                      <div style={{ padding: 32, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>Red je prazan za ovu kategoriju</div>
+                    )
+                    let pendingIndex = 0
+                    return (
+                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleQueueReorder}>
+                        <SortableContext items={filtered.map(q => q.id)} strategy={verticalListSortingStrategy}>
+                          {filtered.map(q => {
+                            const idx = q.is_published ? -1 : pendingIndex++
+                            return (
+                              <SortableQueueItem
+                                key={q.id}
+                                item={q}
+                                index={idx}
+                                onDelete={deleteQueueItem}
+                                onSelect={setSelectedQueueItem}
+                                isSelected={selectedQueueItem?.id === q.id}
+                                CAT_EMOJIS={CAT_EMOJIS}
+                                CAT_LABELS={CAT_LABELS}
+                              />
+                            )
+                          })}
+                        </SortableContext>
+                      </DndContext>
+                    )
+                  })()}
                 </div>
               </div>
 
-              {/* Desni panel — Novi post + Edit */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-                {/* Kreiranje novog posta */}
-                <div className="admin-panel">
-                  <div className="admin-panel-header">
-                    <div className="admin-panel-title">
-                      <div className="admin-panel-title-icon">
-                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                      </div>
-                      Nova tema
-                    </div>
-                  </div>
-                  <div className="admin-editor-form">
-                    <div className="admin-form-group">
-                      <label className="admin-form-label">Kategorija</label>
-                      <select
-                        className="admin-form-input"
-                        value={newPost.category}
-                        onChange={e => setNewPost(p => ({ ...p, category: e.target.value }))}
-                      >
-                        {CATEGORIES.filter(c => c !== 'sve').map(cat => (
-                          <option key={cat} value={cat}>{CAT_EMOJIS[cat]} {CAT_LABELS[cat]}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="admin-form-group">
-                      <label className="admin-form-label">Naslov</label>
-                      <input
-                        className="admin-form-input"
-                        placeholder="Naslov teme dana..."
-                        value={newPost.title}
-                        onChange={e => setNewPost(p => ({ ...p, title: e.target.value }))}
-                      />
-                    </div>
-                    <div className="admin-form-group">
-                      <label className="admin-form-label">Tekst / poziv na akciju</label>
-                      <textarea
-                        className="admin-form-input admin-form-textarea"
-                        placeholder="Kratki opis ili poziv na akciju..."
-                        value={newPost.subtitle}
-                        onChange={e => setNewPost(p => ({ ...p, subtitle: e.target.value }))}
-                      />
-                    </div>
-                    <div className="admin-editor-actions">
-                      <button
-                        className="admin-btn-primary"
-                        onClick={handleCreateHighlight}
-                        disabled={creating || (!newPost.title.trim() && !newPost.subtitle.trim())}
-                      >
-                        {creating ? 'Kreiranje...' : '+ Kreiraj temu'}
-                      </button>
-                      <button className="admin-btn-secondary" onClick={() => setNewPost(p => ({ ...p, title: '', subtitle: '' }))}>
-                        Obriši polja
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Editor postojeće teme */}
-                {highlight && (
-                  <div className="admin-panel">
+              {/* Desni panel — edit selektovane ili dodaj novu */}
+              <div className="admin-panel">
+                {selectedQueueItem ? (
+                  <>
                     <div className="admin-panel-header">
                       <div className="admin-panel-title">
                         <div className="admin-panel-title-icon">
                           <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                         </div>
-                        Uredi — {CAT_EMOJIS[highlight.category]} {CAT_LABELS[highlight.category]}
+                        Uredi temu
                       </div>
-                      <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 18 }} onClick={() => setHighlight(null)}>×</button>
+                      <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 20 }} onClick={() => setSelectedQueueItem(null)}>×</button>
                     </div>
                     <div className="admin-editor-form">
+                      <div style={{ marginBottom: 16 }}>
+                        <span className={`cat-pill cat-${selectedQueueItem.category}`}>{CAT_EMOJIS[selectedQueueItem.category]} {CAT_LABELS[selectedQueueItem.category]}</span>
+                      </div>
                       <div className="admin-form-group">
                         <label className="admin-form-label">Naslov</label>
                         <input
                           className="admin-form-input"
-                          placeholder="Naslov teme dana..."
-                          value={highlight.title}
-                          onChange={e => setHighlight(h => h ? { ...h, title: e.target.value } : h)}
+                          placeholder="Naslov teme..."
+                          value={selectedQueueItem.title}
+                          onChange={e => setSelectedQueueItem(q => q ? { ...q, title: e.target.value } : q)}
                         />
                       </div>
                       <div className="admin-form-group">
                         <label className="admin-form-label">Tekst / poziv na akciju</label>
                         <textarea
                           className="admin-form-input admin-form-textarea"
-                          placeholder="Kratki opis / poziv na akciju..."
-                          value={highlight.subtitle}
-                          onChange={e => setHighlight(h => h ? { ...h, subtitle: e.target.value } : h)}
+                          placeholder="Kratki opis..."
+                          value={selectedQueueItem.subtitle}
+                          onChange={e => setSelectedQueueItem(q => q ? { ...q, subtitle: e.target.value } : q)}
                         />
                       </div>
                       <div className="admin-editor-actions">
-                        <button className="admin-btn-primary" onClick={handleSaveHighlight} disabled={saving}>
-                          {saving ? 'Čuvanje...' : 'Sačuvaj'}
+                        <button className="admin-btn-primary" onClick={saveQueueItemEdit} disabled={savingQueueItem}>
+                          {savingQueueItem ? 'Čuvanje...' : 'Sačuvaj izmene'}
                         </button>
-                        <button className="admin-btn-secondary" onClick={() => highlight.postId && fetchHighlight(highlight.postId)}>
-                          Poništi
-                        </button>
+                        <button className="admin-btn-secondary" onClick={() => setSelectedQueueItem(null)}>Otkaži</button>
+                      </div>
+                      {!selectedQueueItem.is_published && (
+                        <div style={{ marginTop: 12 }}>
+                          <button
+                            onClick={activateQueueItem}
+                            disabled={activating}
+                            style={{ width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', background: 'rgba(48, 209, 88, 0.15)', color: '#30D158', fontWeight: 700, fontSize: 14, cursor: activating ? 'not-allowed' : 'pointer' }}
+                          >
+                            {activating ? 'Aktiviranje...' : '⚡ Aktiviraj odmah'}
+                          </button>
+                          <div style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
+                            Zamenjuje trenutnu aktivnu temu za {CAT_LABELS[selectedQueueItem.category]}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="admin-panel-header">
+                      <div className="admin-panel-title">
+                        <div className="admin-panel-title-icon">
+                          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                        </div>
+                        Dodaj u red
                       </div>
                     </div>
-                  </div>
+                    <div className="admin-editor-form">
+                      <div className="admin-form-group">
+                        <label className="admin-form-label">Kategorija</label>
+                        <select className="admin-form-input" value={newQueueItem.category} onChange={e => setNewQueueItem(q => ({ ...q, category: e.target.value }))}>
+                          {CATEGORIES.filter(c => c !== 'sve').map(cat => (
+                            <option key={cat} value={cat}>{CAT_EMOJIS[cat]} {CAT_LABELS[cat]}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="admin-form-group">
+                        <label className="admin-form-label">Naslov</label>
+                        <input className="admin-form-input" placeholder="Naslov teme..." value={newQueueItem.title} onChange={e => setNewQueueItem(q => ({ ...q, title: e.target.value }))} />
+                      </div>
+                      <div className="admin-form-group">
+                        <label className="admin-form-label">Tekst / poziv na akciju</label>
+                        <textarea className="admin-form-input admin-form-textarea" placeholder="Kratki opis..." value={newQueueItem.subtitle} onChange={e => setNewQueueItem(q => ({ ...q, subtitle: e.target.value }))} />
+                      </div>
+                      <div className="admin-editor-actions">
+                        <button className="admin-btn-primary" onClick={addQueueItem} disabled={addingQueue || (!newQueueItem.title.trim() && !newQueueItem.subtitle.trim())}>
+                          {addingQueue ? 'Dodavanje...' : '+ Dodaj u red'}
+                        </button>
+                        <button className="admin-btn-secondary" onClick={() => setNewQueueItem(q => ({ ...q, title: '', subtitle: '' }))}>Obriši polja</button>
+                      </div>
+                      <div style={{ marginTop: 20, padding: '14px 16px', background: 'rgba(255,255,255,0.04)', borderRadius: 12, fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
+                        ⏱ Rotacija se dešava svaki dan u 00:00 po beogradskom vremenu. Teme se objavljuju po redosledu dodavanja — jedna po kategoriji dnevno.
+                      </div>
+                    </div>
+                  </>
                 )}
-
               </div>
 
             </div>
+            )}
+            </>
           )}
 
         </div>
@@ -698,9 +863,9 @@ export default function AdminPage() {
           <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
           Priče
         </button>
-        <button className={`admin-mobile-nav-btn${section === 'tema' ? ' active' : ''}`} onClick={() => setSection('tema')}>
-          <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-          Tema dana
+        <button className={`admin-mobile-nav-btn${section === 'queue' ? ' active' : ''}`} onClick={() => setSection('queue')}>
+          <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+          Red
         </button>
         <button className="admin-mobile-nav-btn" onClick={() => router.push('/')}>
           <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
@@ -801,6 +966,172 @@ function AdminPostsTable({ posts, onDelete, page, totalCount, onPageChange }: {
           <button className="admin-page-btn" onClick={() => onPageChange(resolvedPage + 1)} disabled={resolvedPage === totalPages}>›</button>
           <button className="admin-page-btn" onClick={() => onPageChange(totalPages)} disabled={resolvedPage === totalPages}>»</button>
           <span className="admin-page-info">{(resolvedPage - 1) * PAGE_SIZE + 1}–{Math.min(resolvedPage * PAGE_SIZE, resolvedTotal)} od {resolvedTotal}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+type ActiveHighlight = { category: string; title: string; subtitle: string }
+
+function ActiveHighlightsPanel({ supabase, CAT_EMOJIS, CAT_LABELS, CATEGORIES, showToast }: {
+  supabase: ReturnType<typeof createWhisperClient>
+  CAT_EMOJIS: Record<string, string>
+  CAT_LABELS: Record<string, string>
+  CATEGORIES: string[]
+  showToast: (msg: string) => void
+}) {
+  const cats = CATEGORIES.filter(c => c !== 'sve')
+  const [items, setItems] = useState<ActiveHighlight[]>([])
+  const [editing, setEditing] = useState<ActiveHighlight | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    supabase.from('daily_highlights').select('category, title, subtitle').in('category', cats).then(({ data }) => {
+      if (data) setItems(data as ActiveHighlight[])
+    })
+  }, [])
+
+  async function handleSave() {
+    if (!editing) return
+    setSaving(true)
+    await supabase.from('daily_highlights')
+      .upsert({ category: editing.category, title: editing.title, subtitle: editing.subtitle, updated_at: new Date().toISOString() }, { onConflict: 'category' })
+    setItems(prev => prev.map(i => i.category === editing.category ? { ...editing } : i))
+    setSaving(false)
+    showToast('Tema sačuvana! ✅')
+    setEditing(null)
+  }
+
+  async function handleClear(category: string) {
+    await supabase.from('daily_highlights')
+      .update({ title: null, subtitle: null, post_id: null, updated_at: new Date().toISOString() })
+      .eq('category', category)
+    setItems(prev => prev.map(i => i.category === category ? { ...i, title: '', subtitle: '' } : i))
+    if (editing?.category === category) setEditing(null)
+    showToast('Tema uklonjena.')
+  }
+
+  return (
+    <div className="admin-content-grid">
+      <div className="admin-panel">
+        <div className="admin-panel-header">
+          <div className="admin-panel-title">Trenutno aktivne teme</div>
+          <span className="admin-panel-badge">{items.filter(i => i.title).length} / {cats.length}</span>
+        </div>
+        <div className="admin-highlights-list">
+          {cats.map(cat => {
+            const item = items.find(i => i.category === cat)
+            const hasContent = !!item?.title
+            return (
+              <div
+                key={cat}
+                className={`admin-highlight-item${editing?.category === cat ? ' active' : ''}`}
+                style={{ opacity: hasContent ? 1 : 0.45, cursor: 'pointer' }}
+                onClick={() => setEditing({ category: cat, title: item?.title ?? '', subtitle: item?.subtitle ?? '' })}
+              >
+                <div className="admin-highlight-item-top">
+                  <span className={`cat-pill cat-${cat}`}>{CAT_EMOJIS[cat]} {CAT_LABELS[cat]}</span>
+                  {hasContent && (
+                    <button className="admin-highlight-delete" onClick={e => { e.stopPropagation(); handleClear(cat) }} title="Ukloni">×</button>
+                  )}
+                </div>
+                {hasContent
+                  ? <>
+                      <div className="admin-highlight-item-title">{item?.title}</div>
+                      <div className="admin-highlight-item-sub">{item?.subtitle}</div>
+                    </>
+                  : <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>Nema aktivne teme</div>
+                }
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="admin-panel">
+        {editing ? (
+          <>
+            <div className="admin-panel-header">
+              <div className="admin-panel-title">
+                <div className="admin-panel-title-icon"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
+                Uredi — {CAT_EMOJIS[editing.category]} {CAT_LABELS[editing.category]}
+              </div>
+              <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 18 }} onClick={() => setEditing(null)}>×</button>
+            </div>
+            <div className="admin-editor-form">
+              <div className="admin-form-group">
+                <label className="admin-form-label">Naslov</label>
+                <input className="admin-form-input" placeholder="Naslov teme dana..." value={editing.title} onChange={e => setEditing(ed => ed ? { ...ed, title: e.target.value } : ed)} />
+              </div>
+              <div className="admin-form-group">
+                <label className="admin-form-label">Tekst</label>
+                <textarea className="admin-form-input admin-form-textarea" placeholder="Kratki opis..." value={editing.subtitle} onChange={e => setEditing(ed => ed ? { ...ed, subtitle: e.target.value } : ed)} />
+              </div>
+              <div className="admin-editor-actions">
+                <button className="admin-btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Čuvanje...' : 'Sačuvaj'}</button>
+                <button className="admin-btn-secondary" onClick={() => setEditing(null)}>Otkaži</button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: 32, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>
+            Klikni na kategoriju levo da uređuješ
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SortableQueueItem({ item, index, onDelete, onSelect, isSelected, CAT_EMOJIS, CAT_LABELS }: {
+  item: QueueItem
+  index: number
+  onDelete: (id: string) => void
+  onSelect: (item: QueueItem) => void
+  isSelected: boolean
+  CAT_EMOJIS: Record<string, string>
+  CAT_LABELS: Record<string, string>
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : item.is_published ? 0.45 : 1,
+    cursor: isDragging ? 'grabbing' : 'pointer',
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`admin-highlight-item${isSelected ? ' active' : ''}`}
+      onClick={() => onSelect(item)}
+    >
+      <div className="admin-highlight-item-top">
+        <span className={`cat-pill cat-${item.category}`}>{CAT_EMOJIS[item.category]} {CAT_LABELS[item.category]}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {item.is_published
+            ? <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>objavljeno</span>
+            : <span style={{ fontSize: 11, color: '#30D158', fontWeight: 600 }}>#{index + 1} na redu</span>
+          }
+          <button
+            {...attributes}
+            {...listeners}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'grab', padding: '0 2px', fontSize: 16, lineHeight: 1, touchAction: 'none' }}
+            title="Prevuci za reorder"
+            onClick={e => e.stopPropagation()}
+          >
+            ⠿
+          </button>
+          <button className="admin-highlight-delete" onClick={e => { e.stopPropagation(); onDelete(item.id) }} title="Obriši">×</button>
+        </div>
+      </div>
+      <div className="admin-highlight-item-title">{item.title || <em style={{ opacity: 0.4 }}>Bez naslova</em>}</div>
+      <div className="admin-highlight-item-sub">{item.subtitle || <em style={{ opacity: 0.4 }}>Bez teksta</em>}</div>
+      {item.is_published && item.published_at && (
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>
+          Objavljeno: {new Date(item.published_at).toLocaleDateString('sr-RS')}
         </div>
       )}
     </div>

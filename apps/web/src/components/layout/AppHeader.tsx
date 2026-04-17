@@ -8,6 +8,7 @@ import ComposeModal from '@/components/feed/ComposeModal'
 import SearchOverlay from '@/components/search/SearchOverlay'
 import ProfileOverlay from '@/components/profile/ProfileOverlay'
 import { useRouter } from 'next/navigation'
+import { t } from '@/lib/i18n'
 
 export default function AppHeader() {
   const { user, logout, notifications, markAllRead } = useStore()
@@ -19,6 +20,7 @@ export default function AppHeader() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
+  const lang = user?.language
   const unread = notifications.filter(n => !n.read).length
   const notifRef = useRef<HTMLDivElement>(null)
 
@@ -47,20 +49,19 @@ export default function AppHeader() {
 
         {!user ? (
           <div className="header-auth">
-            <button className="btn-ghost" onClick={() => setAuthOpen(true)}>Prijavi se</button>
-            <button className="btn-primary-sm" onClick={() => setAuthOpen(true)}>Registruj se</button>
+            <button className="btn-ghost" onClick={() => setAuthOpen(true)}>{t(lang, 'loginBtn')}</button>
+            <button className="btn-primary-sm" onClick={() => setAuthOpen(true)}>{t(lang, 'headerRegisterBtn')}</button>
           </div>
         ) : (
           <div className="header-user">
-            {/* Desktop nav unutar header-user da svi imaju isti gap */}
             <nav className="header-desktop-nav">
               <button className="header-nav-btn" onClick={() => setComposeOpen(true)}>
                 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                Podeli
+                {t(lang, 'navShare')}
               </button>
               <button className="header-nav-btn" onClick={() => setSearchOpen(true)}>
                 <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                Istraži
+                {t(lang, 'navExplore')}
               </button>
             </nav>
 
@@ -74,11 +75,11 @@ export default function AppHeader() {
 
               <div className={`notif-dropdown${notifOpen ? ' open' : ''}`}>
                 <div className="notif-dropdown-header">
-                  <h4>Obaveštenja</h4>
-                  {unread > 0 && <button className="notif-mark-all" onClick={markAllRead}>Označi sve</button>}
+                  <h4>{t(lang, 'notifTitle')}</h4>
+                  {unread > 0 && <button className="notif-mark-all" onClick={markAllRead}>{t(lang, 'notifMarkAll')}</button>}
                 </div>
                 {notifications.length === 0 ? (
-                  <div className="notif-empty">Nema novih obaveštenja</div>
+                  <div className="notif-empty">{t(lang, 'notifNewEmpty')}</div>
                 ) : notifications.slice(0, 4).map(n => (
                   <div
                     key={n.id}
@@ -95,7 +96,7 @@ export default function AppHeader() {
                     <div className="notif-content">
                       <div className="notif-text">
                         <strong>{n.commenterUsername}</strong>
-                        {n.type === 'comment' ? ' je komentarisao/la tvoju priču 💬' : ' je reagovao/la na tvoju priču ❤️'}
+                        {n.type === 'comment' ? t(lang, 'notifComment') : t(lang, 'notifReaction')}
                       </div>
                       <div className="notif-time">{n.time}</div>
                     </div>
@@ -103,7 +104,7 @@ export default function AppHeader() {
                 ))}
                 {notifications.length > 0 && (
                   <button className="notif-see-more" onClick={(e) => { e.stopPropagation(); setNotifOpen(false); setNotifPanelOpen(true) }}>
-                    Vidi sve ({notifications.length})
+                    {t(lang, 'notifSeeAll')} ({notifications.length})
                   </button>
                 )}
               </div>
@@ -115,7 +116,6 @@ export default function AppHeader() {
               </a>
             )}
 
-            {/* Profil — vidljivo samo na desktopu (>991px), na mobilnom je u BottomNav) */}
             <button className="user-avatar-btn desktop-only" onClick={() => setProfileOpen(true)}>
               <Avatar
                 initials={(user.username || 'U')[0].toUpperCase()}
@@ -123,7 +123,7 @@ export default function AppHeader() {
                 avatarImage={user.avatarUrl}
                 size="sm"
               />
-              <span className="user-name-sm">{user.username || 'Ti'}</span>
+              <span className="user-name-sm">{user.username || t(lang, 'youLabel')}</span>
             </button>
           </div>
         )}

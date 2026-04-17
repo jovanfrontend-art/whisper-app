@@ -8,6 +8,7 @@ import {
   getUserProfile,
   updateUserProfile,
 } from '../queries/auth'
+import type { SignUpResult } from '../queries/auth'
 import { uploadImage } from '../queries/storage'
 
 export function useAuth(client: SupabaseClient) {
@@ -34,21 +35,28 @@ export function useAuth(client: SupabaseClient) {
       }
     }
 
+    async function loadProfile(id: string, email: string) {
+      await client.from('profiles').update({ email }).eq('id', id)
+      const profile = await getUserProfile(client, id, email)
+      if (!profile) return
+      const pendingLang = typeof localStorage !== 'undefined' ? localStorage.getItem(`pending_lang_${id}`) : null
+      if (pendingLang) {
+        localStorage.removeItem(`pending_lang_${id}`)
+        await client.from('profiles').update({ language: pendingLang }).eq('id', id)
+        profile.language = pendingLang
+      }
+      setUser(profile)
+      startPresence(id, profile.username)
+    }
+
     client.auth.getSession().then(({ data }) => {
       const su = data.session?.user
-      if (su) {
-        getUserProfile(client, su.id, su.email!).then(profile => {
-          if (profile) { setUser(profile); startPresence(su.id, profile.username) }
-        })
-      }
+      if (su) loadProfile(su.id, su.email!)
     })
 
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
       if (!session) { setUser(null); stopPresence(); return }
-      const su = session.user
-      getUserProfile(client, su.id, su.email!).then(profile => {
-        if (profile) { setUser(profile); startPresence(su.id, profile.username) }
-      })
+      loadProfile(session.user.id, session.user.email!)
     })
 
     return () => { subscription.unsubscribe(); stopPresence() }
@@ -58,18 +66,22 @@ export function useAuth(client: SupabaseClient) {
     return loginWithPassword(client, email, password)
   }
 
-  async function signup(email: string, username: string, password: string): Promise<boolean> {
+  async function signup(email: string, username: string, password: string, language: string = 'sr'): Promise<SignUpResult> {
     const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
     const { data, error } = await client.auth.signUp({
       email, password,
       options: { data: { username, color } },
     })
-    if (error || !data.user) return false
-    // Upsert profile BEFORE onAuthStateChange can fire getUserProfile
-    await client.from('profiles').upsert({ id: data.user.id, username, color, is_admin: false, email })
+    if (error) return { status: 'error', message: error.message }
+    if (!data.user) return { status: 'error', message: 'Registracija nije uspela.' }
+    await client.from('profiles').upsert({ id: data.user.id, username, color, is_admin: false, email, language })
+    if (!data.session) {
+      if (typeof localStorage !== 'undefined') localStorage.setItem(`pending_lang_${data.user.id}`, language)
+      return { status: 'confirm_email' }
+    }
     const profile = await getUserProfile(client, data.user.id, email)
     if (profile) setUser(profile)
-    return true
+    return { status: 'ok' }
   }
 
   async function logout(): Promise<void> {
@@ -77,14 +89,16 @@ export function useAuth(client: SupabaseClient) {
     setUser(null)
   }
 
-  async function updateProfile(username: string, avatarImage?: string | null): Promise<void> {
+  async function updateProfile(username: string, avatarImage?: string | null, language?: string): Promise<void> {
     if (!user) return
-    let avatarUrl = user.avatarUrl ?? null
-    if (avatarImage && avatarImage.startsWith('data:')) {
+    let avatarUrl: string | null = null
+    if (avatarImage === undefined) {
+      avatarUrl = user.avatarUrl ?? null
+    } else if (avatarImage && avatarImage.startsWith('data:')) {
       avatarUrl = await uploadImage(client, 'avatars', avatarImage, user.id)
     }
-    await updateUserProfile(client, user.id, username, avatarUrl)
-    setUser(prev => prev ? { ...prev, username, avatarUrl } : prev)
+    await updateUserProfile(client, user.id, username, avatarUrl, language)
+    setUser(prev => prev ? { ...prev, username, avatarUrl, ...(language ? { language } : {}) } : prev)
   }
 
   return { user, setUser, login, signup, logout, updateProfile }

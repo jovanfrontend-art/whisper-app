@@ -8,6 +8,8 @@ import ReactionBar from '@/components/ui/ReactionBar'
 import AuthModal from '@/components/auth/AuthModal'
 import AppHeader from '@/components/layout/AppHeader'
 import { PostSkeleton } from '@/components/ui/Preloader'
+import { translateText, translateBatch } from '@/lib/translate'
+import { t, tCat } from '@/lib/i18n'
 
 export default function ThreadPage() {
   const { id } = useParams<{ id: string }>()
@@ -19,8 +21,31 @@ export default function ThreadPage() {
   const [commentImage, setCommentImage] = useState<string | null>(null)
   const [kickTarget, setKickTarget] = useState<string | null>(null)
   const [authOpen, setAuthOpen] = useState(false)
+  const [translatedPostText, setTranslatedPostText] = useState<string | null>(null)
+  const [translatedComments, setTranslatedComments] = useState<Record<string, string>>({})
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const imgInputRef = useRef<HTMLInputElement>(null)
+
+  const userLang = user?.language
+
+  const commentIds = post?.comments.map(c => c.id).join(',') ?? ''
+
+  useEffect(() => {
+    if (!post || !userLang) return
+    let cancelled = false
+    translateText(post.text, userLang).then(txt => {
+      if (!cancelled) setTranslatedPostText(txt)
+    })
+    if (post.comments.length > 0) {
+      translateBatch(post.comments.map(c => c.text), userLang).then(results => {
+        if (cancelled) return
+        const map: Record<string, string> = {}
+        post.comments.forEach((c, i) => { map[c.id] = results[i] })
+        setTranslatedComments(map)
+      })
+    }
+    return () => { cancelled = true }
+  }, [post?.id, commentIds, userLang])
 
   // Scroll to comment from notification link
   useEffect(() => {
@@ -53,8 +78,8 @@ export default function ThreadPage() {
   if (!post) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>
-        <p>Post nije pronađen.</p>
-        <button className="btn-back" onClick={() => router.push('/')}>← Nazad</button>
+        <p>{t(userLang, 'postNotFound')}</p>
+        <button className="btn-back" onClick={() => router.push('/')}>{t(userLang, 'backBtn') || '← Nazad'}</button>
       </div>
     )
   }
@@ -96,7 +121,7 @@ export default function ThreadPage() {
     if (!post) return
     removeComment(post.id, commentId)
     setKickTarget(null)
-    showToast('Komentar je uklonjen iz tvoje priče. 🚫')
+    showToast(t(userLang, 'toastCommentRemoved'))
   }
 
   return (
@@ -109,11 +134,11 @@ export default function ThreadPage() {
           <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </button>
         <div className="thread-header-info">
-          <div className="thread-header-title">{isAdminPost ? 'Tema dana' : 'Priča'}</div>
-          <div className="thread-header-sub">{post.comments.length} komentara</div>
+          <div className="thread-header-title">{isAdminPost ? t(userLang, 'topicLabel') : t(userLang, 'storyLabel')}</div>
+          <div className="thread-header-sub">{post.comments.length} {t(userLang, 'commentCount')}</div>
         </div>
         <span className={`cat-pill${isAdminPost ? ' cat-temadana' : ` ${catClass}`}`}>
-          {isAdminPost ? '✨ Whisper' : post.category}
+          {isAdminPost ? '✨ Whisper' : tCat(userLang, post.category) || post.category}
         </span>
       </div>
 
@@ -123,7 +148,7 @@ export default function ThreadPage() {
           {isOwner && (
             <div className="owner-banner">
               <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-              Ovo je tvoja priča · možeš uklanjati neprikladne komentare
+              {t(userLang, 'ownerBanner')}
             </div>
           )}
 
@@ -138,16 +163,16 @@ export default function ThreadPage() {
                 <span className={`original-post-anon${isAdminPost ? ' whisper-name' : ''}`}>
                   {isAdminPost ? 'Whisper' : author.name}
                 </span>
-                <span className="original-post-time">{isAdminPost ? 'Admin · Tema dana' : post.time}</span>
+                <span className="original-post-time">{isAdminPost ? `Admin · ${t(userLang, 'topicLabel')}` : post.time}</span>
               </div>
             </div>
             <span className={`cat-pill${isAdminPost ? ' cat-temadana' : ` ${catClass}`}`}>
-              {isAdminPost ? '✨ Tema dana' : post.category}
+              {isAdminPost ? `✨ ${t(userLang, 'topicLabel')}` : tCat(userLang, post.category) || post.category}
             </span>
           </div>
 
           {post.title && <h2 className="original-post-title">{post.title}</h2>}
-          <p className="original-post-text">{post.text}</p>
+          <p className="original-post-text">{translatedPostText || post.text}</p>
         </div>
 
         {post.image && (
@@ -166,7 +191,7 @@ export default function ThreadPage() {
       {/* Comments */}
       <div className="comments-section">
         <div className="comments-header">
-          <span className="comments-title">Komentari</span>
+          <span className="comments-title">{t(userLang, 'commentsTitle')}</span>
           <span className="comments-count-badge">{post.comments.length}</span>
         </div>
 
@@ -174,8 +199,8 @@ export default function ThreadPage() {
           {post.comments.length === 0 ? (
             <div className="empty-state">
               <span className="empty-state-emoji">💬</span>
-              <h3>Nema komentara još</h3>
-              <p>Budi prvi koji će dati podršku ili savet!</p>
+              <h3>{t(userLang, 'noCommentsTitle')}</h3>
+              <p>{t(userLang, 'noCommentsDesc')}</p>
             </div>
           ) : (
             post.comments.map((c, i) => (
@@ -208,7 +233,7 @@ export default function ThreadPage() {
                   </div>
                 </div>
 
-                <p className="comment-text">{c.text}</p>
+                <p className="comment-text">{translatedComments[c.id] || c.text}</p>
 
                 {c.image && <img className="comment-image" src={c.image} alt="" loading="lazy" />}
 
@@ -231,7 +256,7 @@ export default function ThreadPage() {
         <div className="comment-input-bar">
           <div className="comment-input-hint">
             <svg viewBox="0 0 24 24"><path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1zm0 2c4.962 0 9 4.038 9 9s-4.038 9-9 9-9-4.038-9-9 4.038-9 9-9zm-.5 4v5.5l4.5 2.7-.75 1.3-5.25-3V7h1.5z"/></svg>
-            Odgovor je anoniman
+            {t(userLang, 'anonymousHint')}
           </div>
 
           {commentImage && (
@@ -255,7 +280,7 @@ export default function ThreadPage() {
             <textarea
               ref={textareaRef}
               className="comment-textarea"
-              placeholder="Napiši komentar..."
+              placeholder={t(userLang, 'commentPlaceholder')}
               value={commentText}
               onChange={e => { setCommentText(e.target.value); autoResize() }}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendComment() } }}
@@ -276,8 +301,8 @@ export default function ThreadPage() {
       ) : (
         <div className="comment-input-bar">
           <div className="comment-login-prompt">
-            <span>Prijavi se da bi komentarisao/la</span>
-            <button className="btn-primary-sm" onClick={() => setAuthOpen(true)}>Prijavi se</button>
+            <span>{t(userLang, 'loginToComment')}</span>
+            <button className="btn-primary-sm" onClick={() => setAuthOpen(true)}>{t(userLang, 'loginBtn')}</button>
           </div>
         </div>
       )}
@@ -291,14 +316,14 @@ export default function ThreadPage() {
             <div className="kick-dialog-icon">
               <svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
             </div>
-            <div className="kick-dialog-title">Ukloni komentar?</div>
-            <p className="kick-dialog-text">Ovaj komentar će biti trajno uklonjen iz tvoje priče.</p>
+            <div className="kick-dialog-title">{t(userLang, 'removeCommentTitle')}</div>
+            <p className="kick-dialog-text">{t(userLang, 'removeCommentDesc')}</p>
             <div className="kick-dialog-actions">
               <button className="btn-kick-confirm" onClick={() => executeKick(kickTarget)}>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                Da, ukloni
+                {t(userLang, 'confirmRemoveBtn')}
               </button>
-              <button className="btn-kick-cancel" onClick={() => setKickTarget(null)}>Odustani</button>
+              <button className="btn-kick-cancel" onClick={() => setKickTarget(null)}>{t(userLang, 'cancelBtn')}</button>
             </div>
           </div>
         </>

@@ -11,15 +11,19 @@ import SearchOverlay from '@/components/search/SearchOverlay'
 import ProfileOverlay from '@/components/profile/ProfileOverlay'
 import AuthModal from '@/components/auth/AuthModal'
 import { PostSkeleton } from '@/components/ui/Preloader'
+import { translateBatch } from '@/lib/translate'
+import { t } from '@/lib/i18n'
 
 export default function Home() {
-  const { activeCategory, getPostsByCategory, loading } = useStore()
+  const { activeCategory, getPostsByCategory, loading, user } = useStore()
   const [composeOpen, setComposeOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
+  const [translations, setTranslations] = useState<Record<string, string>>({})
+  const [translating, setTranslating] = useState(false)
 
   useEffect(() => {
     const handler = () => setShowBackToTop(window.scrollY > 300)
@@ -35,6 +39,28 @@ export default function Home() {
   }, [activeCategory, loading])
 
   const posts = getPostsByCategory(activeCategory)
+  const userLang = user?.language
+  const postIds = posts.map(p => p.id).join(',')
+
+  useEffect(() => {
+    if (!userLang || loading || !postIds) {
+      setTranslations(prev => Object.keys(prev).length === 0 ? prev : {})
+      setTranslating(false)
+      return
+    }
+    let cancelled = false
+    setTranslations({})
+    setTranslating(true)
+    const currentPosts = getPostsByCategory(activeCategory)
+    translateBatch(currentPosts.map(p => p.text), userLang).then(results => {
+      if (cancelled) return
+      const map: Record<string, string> = {}
+      currentPosts.forEach((p, i) => { map[p.id] = results[i] })
+      setTranslations(map)
+      setTranslating(false)
+    })
+    return () => { cancelled = true }
+  }, [postIds, userLang, loading])
 
   return (
     <>
@@ -45,7 +71,7 @@ export default function Home() {
         <DailyHighlightCard />
 
         <div className="feed-section-header">
-          <span className="feed-section-title">Priče</span>
+          <span className="feed-section-title">{t(userLang, 'storiesTitle')}</span>
           {!loading && !transitioning && <span className="feed-section-count">{posts.length}</span>}
         </div>
 
@@ -61,11 +87,11 @@ export default function Home() {
           ) : posts.length === 0 ? (
             <div className="empty-state">
               <span className="empty-state-emoji">🌐</span>
-              <h3>Nema priča ovde</h3>
-              <p>Budi prvi koji će podeliti priču u ovoj kategoriji!</p>
+              <h3>{t(userLang, 'noStoriesTitle')}</h3>
+              <p>{t(userLang, 'noStoriesDesc')}</p>
             </div>
           ) : (
-            posts.map((post, i) => <PostCard key={post.id} post={post} index={i} />)
+            posts.map((post, i) => <PostCard key={post.id} post={post} index={i} translatedText={translations[post.id]} translating={translating} />)
           )}
         </div>
       </main>

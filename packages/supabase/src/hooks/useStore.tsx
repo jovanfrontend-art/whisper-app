@@ -4,6 +4,10 @@ import { createWhisperClient } from '../client'
 import { useAuth } from './useAuth'
 import { usePosts } from './usePosts'
 import { useNotifications } from './useNotifications'
+import type { SignUpResult } from '../queries/auth'
+import { t } from '@whisper/shared'
+
+export type { SignUpResult }
 
 export interface StoreContextType {
   posts: Post[]
@@ -21,9 +25,9 @@ export interface StoreContextType {
   removeComment: (postId: string, commentId: string) => Promise<void>
   addPost: (text: string, category: string, image?: string | null) => Promise<void>
   login: (email: string, password: string) => Promise<boolean>
-  signup: (email: string, username: string, password: string) => Promise<boolean>
+  signup: (email: string, username: string, password: string, language?: string) => Promise<SignUpResult>
   logout: () => Promise<void>
-  updateProfile: (username: string, avatarImage?: string | null) => Promise<void>
+  updateProfile: (username: string, avatarImage?: string | null, language?: string) => Promise<void>
   notifications: Notification[]
   markAllRead: () => void
   markOneRead: (id: string) => void
@@ -60,29 +64,31 @@ export function StoreProvider({ children, supabaseUrl, supabaseKey }: StoreProvi
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     const ok = await auth.login(email, password)
-    if (ok) showToast('Dobrodošao/la nazad! 👋')
+    if (ok) showToast(t(auth.user?.language, 'toastWelcomeBack'))
     return ok
   }, [auth, showToast])
 
-  const signup = useCallback(async (email: string, username: string, password: string): Promise<boolean> => {
-    const ok = await auth.signup(email, username, password)
-    if (ok) showToast('Nalog kreiran! Dobrodošao/la 🎉')
-    return ok
+  const signup = useCallback(async (email: string, username: string, password: string, language?: string): Promise<SignUpResult> => {
+    const result = await auth.signup(email, username, password, language)
+    if (result.status === 'ok') showToast(t(language, 'toastSignupOk'))
+    return result
   }, [auth, showToast])
 
   const logout = useCallback(async () => {
+    const lang = auth.user?.language
     await auth.logout()
-    showToast('Odjavljen/a si. Vidimo se! 👋')
+    showToast(t(lang, 'toastLogout'))
   }, [auth, showToast])
 
   const addPost = useCallback(async (text: string, category: string, image?: string | null) => {
+    const lang = auth.user?.language
     try {
       await postsStore.addPost(text, category, image)
-      showToast('Priča podeljena! 🎉 Hvala ti što si to uradio/la.')
+      showToast(t(lang, 'toastPostShared'))
     } catch {
-      showToast('Greška pri slanju. Pokušaj ponovo.')
+      showToast(t(lang, 'toastPostError'))
     }
-  }, [postsStore, showToast])
+  }, [auth.user, postsStore, showToast])
 
   return (
     <StoreContext.Provider value={{

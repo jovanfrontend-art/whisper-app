@@ -501,7 +501,7 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
     rgba(var(--daily-rgb), 0.08) 100%);
   border: 1px solid rgba(var(--daily-rgb), 0.22);
   border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
   position: relative;
   overflow: hidden;
   transition: border-color 0.3s ease;
@@ -532,7 +532,7 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
   margin-bottom: var(--space-md);
 }
 .daily-title { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.25; margin-bottom: var(--space-xs); letter-spacing: -0.03em; }
-.daily-text { font-size: 14px; color: var(--text-2); margin-bottom: var(--space-lg); line-height: 1.55; }
+.daily-text { font-size: 14px; color: var(--text-2); margin-bottom: 0; line-height: 1.55; }
 .daily-highlight .reactions-bar { margin-bottom: var(--space-md); }
 .daily-highlight .post-card-footer {
   border-top: 1px solid rgba(var(--daily-rgb), 0.14);
@@ -571,6 +571,7 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
   overflow: hidden; word-break: break-word;
 }
+.post-translated-label { display: inline-block; font-size: 11px; color: var(--text-3); margin-bottom: var(--space-sm); }
 .post-image-wrap { margin: 0 calc(-1 * var(--space-lg)) var(--space-md); overflow: hidden; }
 .post-image { width: 100%; max-height: 220px; object-fit: cover; display: block; background: var(--surface-2); }
 .post-card-footer {
@@ -649,6 +650,37 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 }
 .modal-backdrop.active { opacity: 1; pointer-events: all; }
 
+/* Modal Popup — reusable centered modal */
+.modal-popup {
+  position: fixed; bottom: 0;
+  left: 50%; transform: translateX(-50%) translateY(100%);
+  width: 100%; max-width: var(--max-w);
+  background: var(--surface-2);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  border: 1px solid var(--separator); border-bottom: none;
+  z-index: 95;
+  max-height: 92dvh; overflow-y: auto;
+  display: flex; flex-direction: column;
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.modal-popup.active { transform: translateX(-50%) translateY(0); }
+.modal-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--separator);
+  flex-shrink: 0;
+}
+.modal-popup-title { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.modal-popup-close {
+  width: 32px; height: 32px; border-radius: var(--radius-full);
+  background: var(--surface-3); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background var(--ease); flex-shrink: 0;
+}
+.modal-popup-close svg { width: 18px; height: 18px; fill: var(--text-2); }
+.modal-popup-close:hover { background: var(--surface-4, var(--separator)); }
+.modal-popup-header-actions { display: flex; align-items: center; gap: var(--space-sm); }
+.modal-popup-body { padding: var(--space-xl); padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0)); overflow-y: auto; }
+
 /* Sheet modal */
 .modal-sheet {
   position: fixed; bottom: 0;
@@ -693,7 +725,7 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .char-count.warning { color: var(--primary); }
 .btn-submit {
   width: 100%; padding: 15px; border-radius: var(--radius-md);
-  background: var(--primary); color: #0E0E0F;
+  background: var(--primary); color: #ffffff;
   font-size: 15px; font-weight: 800; letter-spacing: -0.01em;
   box-shadow: var(--shadow-primary); transition: all var(--ease);
   display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
@@ -1094,11 +1126,17 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .profile-avatar-img, .profile-avatar-initials { width: 96px; height: 96px; border-radius: var(--radius-full); flex-shrink: 0; }
 .profile-avatar-img { background-size: cover; background-position: center; background-color: var(--surface-2); border: 3px solid var(--surface-3); }
 .profile-avatar-initials { display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -0.02em; border: 3px solid rgba(255,255,255,0.1); }
-.profile-avatar-edit { position: absolute; bottom: 28px; right: calc(50% - 64px); width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(255,149,0,0.45); transition: transform var(--ease), box-shadow var(--ease); }
+.profile-avatar-edit { position: absolute; bottom: 28px; right: calc(50% - 64px); width: 32px; height: 32px; border-radius: var(--radius-full); background: #0A84FF; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(10,132,255,0.45); transition: box-shadow var(--ease); }
 .profile-avatar-edit svg { width: 15px; height: 15px; fill: #fff; }
-.profile-avatar-edit:hover { transform: scale(1.1); box-shadow: 0 4px 14px rgba(255,149,0,0.55); }
+.profile-avatar-edit:hover { box-shadow: 0 4px 14px rgba(10,132,255,0.55); }
+.profile-avatar-edit--remove { background: #FF453A; box-shadow: 0 2px 8px rgba(255,69,58,0.45); }
+.profile-avatar-edit--remove:hover { box-shadow: 0 4px 14px rgba(255,69,58,0.55); }
 .profile-avatar-preview-hint { font-size: 12px; color: var(--primary); font-weight: 600; opacity: 0; transition: opacity var(--ease); height: 16px; }
 .profile-avatar-preview-hint.visible { opacity: 1; }
+.lang-picker-wrap { display: flex; flex-direction: column; gap: 6px; }
+.lang-picker-select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; font-size: 15px; font-weight: 600; color: var(--text); font-family: var(--font); cursor: pointer; width: 100%; transition: border-color var(--ease); appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%23888'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+.lang-picker-select:focus { border-color: rgba(10,132,255,0.45); outline: none; }
+.lang-picker-select option { background: var(--surface-2); }
 .profile-form { display: flex; flex-direction: column; gap: var(--space-lg); margin-bottom: var(--space-2xl); }
 .profile-field { display: flex; flex-direction: column; gap: 6px; }
 .profile-label { font-size: 12px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
@@ -1395,7 +1433,7 @@ select.admin-form-input option { background: #2A2A2D; }
     max-width: 700px;
     margin: 0 auto;
   }
-  .thread-content { padding-top: calc(var(--header-h) * 2 + 24px); padding-bottom: 60px; }
+  .thread-content { padding-top: calc(var(--header-h) * 2 + 24px); padding-bottom: 130px; }
 
   /* Comment input bar iste sirine kao sadrzaj */
   .comment-input-bar {
@@ -1405,17 +1443,37 @@ select.admin-form-input option { background: #2A2A2D; }
     margin: 0 auto;
   }
 
-  /* Overlays full screen na desktopu */
-  .search-overlay,
-  .profile-overlay {
-    left: 0; right: 0;
-    transform: translateY(100%);
-    max-width: 100%;
-    width: 100%;
+  /* Modal Popup → centriran modal na desktopu */
+  .modal-popup {
+    top: 50% !important;
+    left: 50% !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) scale(0.96) !important;
+    width: 480px !important;
+    max-width: 90vw !important;
+    height: auto !important;
+    max-height: 85vh !important;
+    border-radius: var(--radius-2xl) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6) !important;
+    z-index: 200 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease !important;
   }
-  .search-overlay.active,
-  .profile-overlay.active {
-    transform: translateY(0);
+  .modal-popup.wide { width: 620px !important; }
+  .modal-popup.active {
+    transform: translate(-50%, -50%) scale(1) !important;
+    opacity: 1 !important;
+    pointer-events: all !important;
+  }
+
+  /* Backdrop iznad headera na desktopu */
+  .modal-backdrop {
+    z-index: 199;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 }
 

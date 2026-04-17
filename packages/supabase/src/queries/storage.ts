@@ -19,5 +19,5 @@ export async function uploadImage(
 
   if (!upload) return null
   const { data: { publicUrl } } = client.storage.from('whisper-images').getPublicUrl(path)
-  return publicUrl
+  return folder === 'avatars' ? `${publicUrl}?t=${Date.now()}` : publicUrl
 }
