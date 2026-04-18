@@ -39,7 +39,7 @@ export default function PostCard({ post, index = 0, translatedText, translating 
           <div className="skeleton" style={{ height: 14, borderRadius: 6, width: '60%' }} />
         </div>
       ) : (
-        <p className="post-text">{translatedText || post.text}</p>
+        <p className={`post-text${translatedText ? ' translated-fade' : ''}`}>{translatedText || post.text}</p>
       )}
 
       {post.image && (
